@@ -1,1 +1,1 @@
-Github for 4960:Fast Robots Website
+Website for ECE 4960:Fast Robots 
