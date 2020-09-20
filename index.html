@@ -350,7 +350,9 @@
                                         The main files to be modified for this lab were <code>ECE_4960_Robot.ino</code>, which was the Arduino sketch to be uploaded, and main.py, which was the Python Bluetooth example.  </p>
                                     <p>I first set up the USB passthrough to my Ubuntu VM through the VirtualBox Extension Pack and also installed Bleak, a GATT client software capable of connceting to BLE devices.
                                         After setting up the USB passthrough, I was able to download the distribution code and run the <code>ECE_4960_Robot.ino</code> file for with the Arduino IDE and then the <code>main.py</code> to try to discover my robot, 
-                                        caching the address "66:77:88:23:BB:EF" to <code>Settings["cached"]</code> in <code>settings.py</code></p>
+                                        caching the address "66:77:88:23:BB:EF" to <code>Settings["cached"]</code> in <code>settings.py</code>. I noticed sometimes
+                                        the Bluetooth will fail to communicate, and in that case, I just turn off and turn back on Bluetooth under "Settings" in my VM, which 
+                                        usually resolves the issue.</p>
                                     <p> Here's a screenshot of the Serial Monitor of the Arduino side:</p>
                                     <img class="img-fluid d-block mx-auto" src="assets/img/Connect_to_Artemis.PNG" alt="" />
                                     <p>In the distribution code, <code>command.h</code> includes a 99-byte structure (cmd_t) with the first byte as the command type, the second as a length, and the rest as data.</p>
@@ -358,16 +360,17 @@
                                     <p>I was able to successfully discover my robot after configuring the Bluetooth and the received output was a bunch of print-out statements confirming the ping (and pong) as well as the round trip latency. 
                                         On average, the round-trip latency looked to be around 0.114 seconds. </p>
                                     <img class="img-fluid d-block mx-auto" src="assets/img/Pong times.jpg" alt="" />
-                                    <p>Also, as shown in the screenshot and by what I observed by graphing the latencies for 60 pings, this seemed to be fairly consistent throughout all the pings, with most falling between 0.11 and 0.12 seconds. </p>
+                                    <p>Also, as shown in the screenshot and by what I observed by graphing the latencies for 60 pings, 
+                                        this seemed to be fairly consistent throughout all the pings, with most falling between 0.11 and 0.12 seconds. </p>
                                     <img class="img-fluid d-block mx-auto" src="assets/img/Histogram_pongtimes.PNG" alt="" />
-                                    <p></p>
-                                    <p>On average, the round trip latency is around 0.114 seconds. As shown in the screenshot, the round trip 
+                                    <p>To request a float, I sent commands using <code>theRobot.sendCommand(cmd, length, data)</code>. </p>
+                                    
                                     <br> 
                                     
                                     
                                     
                                     
-                                    </p>
+                                    
                                     <p>
                                     
                                     </p>
