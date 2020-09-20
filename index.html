@@ -346,6 +346,13 @@
                                     <!-- Project Details Go Here-->
                                     <h2 class="text-uppercase">Lab 2</h2>
                                     <p class="item-intro text-muted">Bluetooth Communication</p>
+                                    <p>This lab involved testing the low-latency, moderate-throughput wireless communication between the Artemis board and a computer via Bluetooth LE.
+                                        The main files for this lab were ECE_4960_Robot.ino, which was the Arduino sketch to be uploaded, and main.py, which was the Python Bluetooth example.  </p>
+                                    <p>I first set up the USB passthrough to my Ubuntu VM through the VirtualBox Extension Pack and also installed Bleak, a GATT client software capable of connceting to BLE devices.
+                                        After setting up the USB passthrough, I was able to download the distribution code and run main.py to try to discover my robot, caching the address "66:77:88:23:BB:EF" to <code>Settings["cached"]</code> in settings.py
+
+                                    </p>
+                                    <p> </p>
                                     <img class="img-fluid d-block mx-auto" src="https://previews.123rf.com/images/cuppuccino/cuppuccino1808/cuppuccino180800110/106006520-cute-robot-icon.jpg" alt="" />
                                     <p>Put in picture of pong times</p>
                                     <p>I was able to successfully discover my robot and ping it.  </p>
