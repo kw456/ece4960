@@ -400,24 +400,19 @@
                                     respectively. I then printed out the number of packets received, the time in microseconds between packets, 
                                     the time in seconds between packets, and the number of packets sent on the Arduino side. 
                                     This is shown in the figure. 
-
-                                    
-                                    
+                                    <img class="img-fluid d-block mx-auto" src="assets/img/data_bytestream_latency.PNG" alt="" />
                                     <p>
-                                    One bug I ran into that confused me for a little while was that the amount of packets I counted
+                                    I will note that one bug I ran into that confused me for a little while was that the amount of packets I counted
                                     that were being sent from the Arduino side were significantly less than the packets being received over 
                                     Bluetooth. Obviously, this was very very wrong because packets don't just start multiplying and increasing in quantity
                                     from the receiving side. I realized this was an issue with the threading in the Python script and how all of them
                                     didn't completely end since I was rerunning the program back-to-back too quickly, meaning apparently all the threads didn't close,
                                     and leading to me having about 8 <code>main.py</code> functions running at the same time (which is a bit of a yikes).
-                                    Luckily, this was resolved and can be mitigated by just waiting a bit after ending the program instead of running it immediately after.
+                                    Luckily, this was resolved and can apparently be mitigated by just waiting a bit after ending the program instead of running it immediately after.
                                     </p>
-                                    <iframe src="https://www.youtube.com/embed/vm0y8BuSDVY"
-                                    width="560" height="315" frameborder="0" allowfullscreen></iframe>
-                                    <p>I ran the Example2_Serial script and confirmed that the serial port was working.</p>
-                                    
+                                    Here is a histogram of the time between packets in milliseconds. The average time is 10.77 ms with a SD of 0.306 ms
                                     <ul class="list-inline">
-                                        <li>Date: </li>
+                                        <li>Date: September 19, 2020</li>
                                     </ul>
                                     <button class="btn btn-primary" data-dismiss="modal" type="button">
                                         <i class="fas fa-times mr-1"></i>
