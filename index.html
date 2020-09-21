@@ -363,7 +363,7 @@
                                     <p>Also, as shown in the screenshot and by what I observed by graphing the latencies for 60 pings, 
                                         this seemed to be fairly consistent throughout all the pings, with most falling between 0.11 and 0.12 seconds. </p>
                                     <img class="img-fluid d-block mx-auto" src="assets/img/Histogram_pongtimes.PNG" alt="" />
-                                    <p> </b>Requesting a float</b></p>
+                                    <title> </b>Requesting a float</b>
                                     <p>To request a float, on the Python script side, I first commented out <code>await theRobot.ping()</code> and instead used <code>await theRobot.sendCommand(Commands.REQ_FlOAT)</code>.
                                     In the Arduino sketch, I wrote the code shown below that the script jumps to when it receives the REQ_FLOAT case. 
                                     There's a data structure called <code>res_cmd</code> with three fields: 
