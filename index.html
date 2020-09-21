@@ -363,9 +363,20 @@
                                     <p>Also, as shown in the screenshot and by what I observed by graphing the latencies for 60 pings, 
                                         this seemed to be fairly consistent throughout all the pings, with most falling between 0.11 and 0.12 seconds. </p>
                                     <img class="img-fluid d-block mx-auto" src="assets/img/Histogram_pongtimes.PNG" alt="" />
-                                    <p>To request a float, I sent commands using <code>theRobot.sendCommand(cmd, length, data)</code>. </p>
+
+                                    <p>To request a float, on the Python script side, I first commented out <code>await theRobot.ping()</code> and instead used <code>await theRobot.sendCommand(Commands.REQ_FlOAT)</code>.
+                                    In the Arduino sketch, I wrote the code shown below that the script jumps to when it receives the REQ_FLOAT case. 
+                                    There's a data structure called <code>res_cmd</code> with three fields: 
+                                    <code>data</code> (the data(float) to send), 
+                                    <code>command_type</code> (in this case, it's <code>GIVE_FLOAT</code> which the Python side will recognize and then print the float),
+                                     and <code>length</code> (which is the length of the data).</p>
+                                    <p>I put in the values for the command type and length as described, and then used the 
+                                    <code>memcpy(dest adr, src adr, size of data)</code> to put in a float that starts at <code>res_cmd->data</code>
+                                    I was then able to use <code>amdtpsSendData((uint8_t*)res_cmd, 6)</code> to send the float, using 6 for the second field because
+                                    it's the size of a float (4 bytes), the length (1 byte), and the command type (1 byte).
+                                    </p>
+                                    <img class="img-fluid d-block mx-auto" src="assets/img/case_req_float.PNG" alt="" />
                                     
-                                    <br> 
                                     
                                     
                                     
