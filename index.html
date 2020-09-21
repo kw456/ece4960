@@ -348,7 +348,7 @@
                                     <p class="item-intro text-muted">Bluetooth Communication</p>
                                     <p>This lab involved testing the low-latency, moderate-throughput wireless communication between the Artemis board and a computer via Bluetooth LE.
                                         The main files to be modified for this lab were <code>ECE_4960_Robot.ino</code>, which was the Arduino sketch to be uploaded, and main.py, which was the Python Bluetooth example.  </p>
-                                    <p>I first set up the USB passthrough to my Ubuntu VM through the VirtualBox Extension Pack and also installed Bleak, a GATT client software capable of connceting to BLE devices.
+                                    <p>I first plugged in my Artemis board with my USB-C cable and then set up the USB passthrough to my Ubuntu VM through the VirtualBox Extension Pack and also installed Bleak, a GATT client software capable of connceting to BLE devices.
                                         After setting up the USB passthrough, I was able to download the distribution code and run the <code>ECE_4960_Robot.ino</code> file for with the Arduino IDE and then the <code>main.py</code> to try to discover my robot, 
                                         caching the address "66:77:88:23:BB:EF" to <code>Settings["cached"]</code> in <code>settings.py</code>. I noticed sometimes
                                         the Bluetooth will fail to communicate, and in that case, I just turn off and turn back on Bluetooth under "Settings" in my VM, which 
@@ -363,7 +363,8 @@
                                     <p>Also, as shown in the screenshot and by what I observed by graphing the latencies for 60 pings, 
                                         this seemed to be fairly consistent throughout all the pings, with most falling between 0.11 and 0.12 seconds. </p>
                                     <img class="img-fluid d-block mx-auto" src="assets/img/Histogram_pongtimes.PNG" alt="" />
-                                    
+                                    <p>This is definitely slower than our baud rate of 115200 symbols/sec. </p>
+                                    <p></p>
                                     <p>Requesting a float</p>
                                     <p>To request a float, on the Python script side, I first commented out <code>await theRobot.ping()</code> and instead used <code>await theRobot.sendCommand(Commands.REQ_FlOAT)</code>.
                                     In the Arduino sketch, I wrote the code shown below that the script jumps to when it receives the REQ_FLOAT case. 
@@ -371,20 +372,45 @@
                                     <code>data</code> (the data(float) to send), 
                                     <code>command_type</code> (in this case, it's <code>GIVE_FLOAT</code> which the Python side will recognize and then print the float),
                                      and <code>length</code> (which is the length of the data).</p>
-                                    <p>I put in the values for the command type and length as described, and then used the 
-                                    <code>memcpy(dest adr, src adr, size of data)</code> to put in a float that starts at <code>res_cmd->data</code>
+                                    <p>I put in the values for the command type and length as described, and then used 
+                                    <code>memcpy(dest adr, src adr, size of data)</code>, a function suggested on Campuswire, to put in a float that starts at <code>res_cmd->data</code>
                                     I was then able to use <code>amdtpsSendData((uint8_t*)res_cmd, 6)</code> to send the float, using 6 for the second field because
                                     it's the size of a float (4 bytes), the length (1 byte), and the command type (1 byte).
                                     </p>
                                     <img class="img-fluid d-block mx-auto" src="assets/img/case_req_float.PNG" alt="" />
+                                    <p>Through the simpleHandler on the Python side, I was able to unpack the float I sent. 
+                                        The <code>main.py</code> program recognized the <code>command_type</code> to be <code>GIVE_FLOAT</code> I sent
+                                        from the Arduino side, and unpacked the bytes as a little-endian float, shown below
+                                    </p>
+                                    <img class="img-fluid d-block mx-auto" src="assets/img/pi.PNG" alt="" />
+                                    The value displayed is not quite the value I sent (which was 3.1415), so I guess the accuracy only goes up to whatever
+                                    digit you sent. 
                                     
-                                    
-                                    
-                                    
+                                    <p>Testing the Data Rate</p>
+                                    <p>Our last subject to cover is finding out what the round-trip latency was by streaming bytes from the Artemis to my computer. 
+                                    In the main Python script, I found the code in my function <code>myRobotTasks()</code> with 
+                                    <code>await theRobot.testByteStream(25)</code>. Then in the Arduino sketch, I added in code for the case <code>if (bytestream_active)</code>.
+                                    I sent an example of a 32 bit integer and a 64 bit integer, copying the data for the 64 bit integer to reside in the 
+                                    address right after the 32 bit integer using <code>memcpy()</code>. In my case, since I wanted to 
+                                    find the average time between packets sent, I had my 32 bit integer be the number of packets 
+                                    the Arduino was sending and the 64 bit integer be the time lapsed between transmissions of packets, as shown below.
+                                    </p>
+                                    <img class="img-fluid d-block mx-auto" src="assets/img/arduino_bytestream.PNG" alt="" />
+                                    On the Python side, I first unpacked the byte array into two byte arrays using <code>first, second = unpack("4s8s",data)</code>, and then unpacked those again into an integer and a long
+                                    respectively. I then printed out the number of packets received, the time in microseconds between packets, 
+                                    the time in seconds between packets, and the number of packets sent on the Arduino side. 
+                                    This is shown in the figure. 
+
                                     
                                     
                                     <p>
-                                    
+                                    One bug I ran into that confused me for a little while was that the amount of packets I counted
+                                    that were being sent from the Arduino side were significantly less than the packets being received over 
+                                    Bluetooth. Obviously, this was very very wrong because packets don't just start multiplying and increasing in quantity
+                                    from the receiving side. I realized this was an issue with the threading in the Python script and how all of them
+                                    didn't completely end since I was rerunning the program back-to-back too quickly, meaning apparently all the threads didn't close,
+                                    and leading to me having about 8 <code>main.py</code> functions running at the same time (which is a bit of a yikes).
+                                    Luckily, this was resolved and can be mitigated by just waiting a bit after ending the program instead of running it immediately after.
                                     </p>
                                     <iframe src="https://www.youtube.com/embed/vm0y8BuSDVY"
                                     width="560" height="315" frameborder="0" allowfullscreen></iframe>
