@@ -79,6 +79,17 @@ hr {
   overflow: visible;
 }
 
+
+
+.parent {
+	text-align: left;
+	}
+  ul { 
+    display: inline-block; 
+    text-align: match-parent; 
+    }
+
+
 h1, h2, h3, h4, h5, h6 {
   margin-top: 0;
   margin-bottom: 0.5rem;
@@ -393,13 +404,6 @@ h6, .h6 {
   font-size: 1.25rem;
   font-weight: 300;
 }
-.parent {
-	text-align: left;
-	}
-ul { 
-	display: inline-block; 
-	text-align: left; 
-	}
 
 .display-1 {
   font-size: 6rem;
