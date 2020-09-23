@@ -470,16 +470,24 @@
                                     <p></p>
                                     <p><b>Lab 3(b)</b></p>
                                     <p>I installed the software dependencies and setup the base code in my VM.
-                                        I also launched the simulator and ran a few tests on my robot. 
+                                        I then was able to run <code>lab3-manager</code>, pressing <code>a</code> and <code>s</code>
+                                        to start the simulator, allowing me to run tests on my robot. 
+                                        Additionally, I ran <code>robot-keyboard-teleop</code> to control the virtual robot through 
+                                        keyboard commands. 
                                     </p>
-                                    <p>From my few tests I could see that when the robot bumps into an obstacle,
-                                        a warning sign will pop up and you then have to manually drag your robot back to 
+                                    <img class="img-fluid d-block mx-auto" src="assets/img/lab3/ROS_screen.PNG" alt="" />
+                                    <p>From my few tests on the virtual robot, I could see that when the robot bumps into an obstacle,
+                                        a warning sign will pop up and the simulation will pause, 
+                                        meaning you then have to manually drag your robot back to 
                                         a non-obstacle occupied place. The robot can go to very low linear and angular speeds (to where it's basically not moving), 
-                                        as 
-                                        well as very high linear and angular speeds (as demonstrated in one of the videos shown). There
+                                        as well as very high linear and angular speeds (as demonstrated in the video shown). This is due to the robot being
+                                        a simulation, meaning it can change it's angular and linear speed/direction practically instantaneous, currently 
+                                        without the factors of friction, skidding, etc. 
                                     </p>
+                                    <iframe src="assets/img/lab3/Video.mov"
+                                    width="560" height="315" frameborder="0" allowfullscreen></iframe> 
                                     <ul class="list-inline">
-                                        <li>Date: </li>
+                                        <li>Date: September 23, 2020</li>
                                     </ul>
                                     <button class="btn btn-primary" data-dismiss="modal" type="button">
                                         <i class="fas fa-times mr-1"></i>
