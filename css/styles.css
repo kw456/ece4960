@@ -58,7 +58,13 @@ article, aside, figcaption, figure, footer, header, hgroup, main, nav, section {
   display: block;
 }
 
-
+div.parent {
+	text-align: center;
+	}
+ul { 
+	display: inline-block; 
+	text-align: left; 
+	}
 
 body {
   margin: 0;
@@ -10234,7 +10240,7 @@ header.masthead .masthead-heading {
 .portfolio-modal .modal-content {
   padding-top: 6rem;
   padding-bottom: 6rem;
-  text-align: left;
+  text-align: center;
 }
 .portfolio-modal .modal-content h2 {
   font-size: 3rem;
