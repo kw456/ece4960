@@ -9703,7 +9703,7 @@ button.bg-dark:focus {
 }
 
 .text-center {
-  text-align: left !important;
+  text-align: center !important;
 }
 
 @media (min-width: 576px) {
@@ -10234,7 +10234,7 @@ header.masthead .masthead-heading {
 .portfolio-modal .modal-content {
   padding-top: 6rem;
   padding-bottom: 6rem;
-  text-align: center;
+  text-align: left;
 }
 .portfolio-modal .modal-content h2 {
   font-size: 3rem;
