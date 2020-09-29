@@ -640,6 +640,37 @@
                                     <!-- Project Details Go Here-->
                                     <h2 class="text-uppercase">Lab 4</h2>
                                     <p class="item-intro text-muted">Motor driver & open loop control</p>
+                                    <p>The purpose of the lab was to change from manual to open loop control of the car. At the end of the lab,
+                                        my car was able to execute a pre-programmed series of moves using the Artemis board and the motor driver over I2C.
+                                    </p>
+                                    <p>Parts Required:</p>
+                                    <div class="parent">
+                                            <ul>
+                                                <li>1 x SparkFun RedBoard Artemis Nano</li>
+                                                <li>1 x USB A-to-C cable</li>
+                                                <li>1 x Li-Ion 3.7V 400 or 500mAh battery</li>
+                                                <li>1 x Sparkfun Qwiic motor driver</li>
+                                                <li>1 x R/C stunt car and NiCad battery</li>
+                                                <li>1 x Qwiic connector</li>
+                                                <li>1 x Small screwdriver (Phillips or flathead)</li>
+                                                <li>1 x Wirecutter (you can also make do with a scissor)</li>          
+                                            </ul>
+                                    </div>
+                                    <p><b><font size = "+2">Lab 4a: </font></b></p>
+                                    <p>I first hooked up the Artemis and the motor driver using a Qwiic connector. I then ran Example_wire
+                                        and found the I2C address to be 0x5D (93).
+                                    </p>
+                                    <p>I then took the car apart, unscrewing and removing the shell/bumpers from the car. I also removed
+                                        the battery and cut the power wires to the control PCB, taking it out. I hooked up the power wires to the SCMD instead.
+
+                                    </p>
+
+
+
+
+
+
+
                                     <p><b><font size = "+2">Lab 4b: Open Loop Control</font></b></p>
                                     <p><b>Setting up the Base Code and Starting the Simulator</b> </p>
                                     <p>I setup the base code by extracting the lab 4 base code in VM and typing <code>./setup.sh</code> in my terminal, 
@@ -666,7 +697,7 @@
                                         By tuning my values, I could make the angles 90 degrees and modify the size of my rectangle by changing the amount of time I let the robot run with a 
                                         non-zero linear velocity. 
                                     <p>My code and demonstration are shown below:</p>
-                                    <!--<img class="img-fluid d-block mx-auto" src="assets/img/lab4/Jupyter_code_Lab4.PNG" alt="" />
+                                <!--<img class="img-fluid d-block mx-auto" src="assets/img/lab4/Jupyter_code_Lab4.PNG" alt="" />
                                     -->
                                     <video controls="controls" width="800" height="600" 
                                             name="Video Name" src="assets/img/lab4/IMG_1092.MOV"></video>
