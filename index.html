@@ -640,23 +640,39 @@
                                     <!-- Project Details Go Here-->
                                     <h2 class="text-uppercase">Lab 4</h2>
                                     <p class="item-intro text-muted">Motor driver & open loop control</p>
-
                                     <p><b><font size = "+2">Lab 4b: Open Loop Control</font></b></p>
-                                    <p>I first setup the lab4 base code in my VM as follows: </p>
+                                    <p><b>Setting up the Base Code and Starting the Simulator</b> </p>
+                                    <p>I setup the base code by extracting the lab 4 base code in VM and typing <code>./setup.sh</code> in my terminal, 
+                                       successfully compiling the lab</p>
+                                    <p>To start the lab4-manager, I opened a terminal window and typed in <code>lab4-manager</code>
+                                        I then launched the simulator by pressing "a" and then "s" on my keyboard.</p>
+                                    </p>
+                                    <p><b>Jupyter Lab Code</b> </p>
+                                    <p>We were introduced to Jupyter Lab to write our Python code. To start a Jupyter server, I did the following:
+                                    </p>
                                     <div class="parent">
                                         <ul>
-                                            <li>Closed all open terminal windows.</li>
-                                            <li>Downloaded and extracted lab 4 base code in VM</li>
-                                            <li>Navigated to the extracted directory in my file explorer</li>
-                                            <li>Right clicked in an empty space in the file explorer and selected "Open in Terminal"</li>
-                                            <li>Typed <code>./setup.sh</code> in my terminal and succesfully compiled the lab</li>
-                                            <li>Closed all open terminal windows.</li>
+                                            <li>Opened a terminal and cd into <code>/home/artemis/catkin_ws/src/lab4/scripts</code>.</li>
+                                            <li>Started a jupyter server using <code>jupyter lab</code></li>
+                                            <li>Opened "lab4.ipynb"</li>
                                         </ul>
                                     </div>
-                                    <p></p>
-
+                                    <p>I was then able to work with the Robot Class which provides a control interface for the robot in
+                                        the simulator and performs the following operations: getting the robot odometry pose, moving the robot, and getting 
+                                        range finder data. </p>
+                                    <p>In order to have my robot move in a rectangular loop, I first imported the necessary modules for 
+                                        my Python script and then instantiated/initialized an object of class Robot. I then set the linear velocity to a value and the angular velocity 
+                                        to 0, let this run for a length of time, and then set the linear velocity to 0 and the angular velocity to a value, letting this run for a length of time. 
+                                        By tuning my values, I could make the angles 90 degrees and modify the size of my rectangle by changing the amount of time I let the robot run with a 
+                                        non-zero linear velocity. 
+                                    <p>My code and demonstration are shown below:</p>
+                                    <!--<img class="img-fluid d-block mx-auto" src="assets/img/lab4/Jupyter_code_Lab4.PNG" alt="" />
+                                    -->
+                                    <video controls="controls" width="800" height="600" 
+                                            name="Video Name" src="assets/img/lab4/IMG_1092.MOV"></video>
+                                    </p>
                                     <ul class="list-inline">
-                                        <li>Date: </li>
+                                        <li>Date: September 29, 2020</li>
                                     </ul>
                                     <p></p>
                                     <button class="btn btn-primary" data-dismiss="modal" type="button">
