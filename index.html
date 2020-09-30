@@ -661,11 +661,36 @@
                                         and found the I2C address to be 0x5D (93).
                                     </p>
                                     <p>I then took the car apart, unscrewing and removing the shell/bumpers from the car. I also removed
-                                        the battery and cut the power wires to the control PCB, taking it out. I hooked up the power wires to the SCMD instead.
-
+                                        the battery and took out the control PCB, cutting its power lines. I hooked up the power wires to the SCMD instead
+                                        noting where the VIN on the SCMD marks the location of the positive terminal.
                                     </p>
-
-
+                                    <img class="img-fluid d-block mx-auto" src="assets/img/lab4/noPCB.JPG" alt="" />
+                                    <p>After that, I cut the connector headers from the motor wires and instead hooked them up to the terminals on the board instead. I mounted the 
+                                        SCMD in the place of the original control PCB and then used the Qwiic connector to hook 
+                                        up the Artemis board with the motor driver. Note: since the Qwiic connector was too big to route through the hole in the chassis,
+                                        I just drilled a bigger hole there so I could feed the wires through. 
+                                    </p>
+                                    <img class="img-fluid d-block mx-auto" src="assets/img/lab4/motordriver.JPG" alt="" />
+                                    <img class="img-fluid d-block mx-auto" src="assets/img/lab4/complete.JPG" alt="" />
+                                    <p>Using the Arduino library manager, I installed the SCMD (Serial Controlled Motor Driver) library. I was then able to make the robot
+                                        follow a straight line, noticing that the right motor is stronger than the other. Therefore, for the left motor to go forwards 
+                                        (motorNum = 0 and direction = 1), I had to
+                                        compensate for the imbalance with <code>myMotorDriver.setDrive(0, 1, 118)</code> to drive the left motor. For the right motor to go forwards
+                                         (motorNum = 1, direction = 1),
+                                        I did <code>myMotorDriver.setDrive(1, 1, 100)</code>. 
+                                    </p>
+                                    <video controls="controls" width="800" height="600" 
+                                            name="Video Name" src="assets/img/lab4/IMG_1117.MOV"></video>
+                                    <p> I then tested the lower limit for which each motor still turns.
+                                        For the left motor, this seemed to be around <code>myMotorDriver.setDrive(0, 1, 68)</code>, while for the right motor
+                                        it seemed to be around <code>myMotorDriver.setDrive(1, 1, 50)</code> </p>
+                                    <p>Technically, the motors are 
+                                        able to start at lower values, but I have to give the wheels a little help (a nudge to start) so I only counted
+                                        the threshold where the wheels could fully turn without any assistance at the beginning from me. 
+                                    </p>
+                                    <p>Lastly, I just used open loop control of the robot to drive it around and make it spin around its own axis. </p>
+                                    <video controls="controls" width="800" height="600" 
+                                            name="Video Name" src="assets/img/lab4/IMG_1119.MOV"></video>
 
 
 
