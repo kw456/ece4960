@@ -686,12 +686,15 @@
                                         it seemed to be around <code>myMotorDriver.setDrive(1, 1, 50)</code> </p>
                                     <p>Technically, the motors are 
                                         able to start at lower values, but I have to give the wheels a little help (a nudge to start) so I only counted
-                                        the threshold where the wheels could fully turn without any assistance at the beginning from me. 
+                                        the threshold where the wheels could fully turn without any assistance at the beginning from me. Additionally, I only
+                                        counted the threshold where the car could actually move forwards. The wheels could spin at a lower threshold with the car on its back
+                                        but I thought this wouldn't be as important since the robot couldn't actually go forwards with the inhibitions of friction and the weight 
+                                        of the car.
                                     </p>
                                     <p>Lastly, I just used open loop control of the robot to drive it around and make it spin around its own axis. </p>
                                     <video controls="controls" width="800" height="600" 
                                             name="Video Name" src="assets/img/lab4/IMG_1119.mov"></video>
-
+                                    <p></p>
 
 
 
