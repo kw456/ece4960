@@ -701,7 +701,6 @@
 
 
 
-
                                     <p><b><font size = "+2">Lab 4b: Open Loop Control</font></b></p>
                                     <p><b>Setting up the Base Code and Starting the Simulator</b> </p>
                                     <p>I setup the base code by extracting the lab 4 base code in VM and typing <code>./setup.sh</code> in my terminal, 
@@ -728,8 +727,8 @@
                                         By tuning my values, I could make the angles 90 degrees and modify the size of my rectangle by changing the amount of time I let the robot run with a 
                                         non-zero linear velocity. 
                                     <p>My code and demonstration are shown below:</p>
-                                <!--<img class="img-fluid d-block mx-auto" src="assets/img/lab4/Jupyter_code_Lab4.PNG" alt="" />
-                                    -->
+                                    <img class="img-fluid d-block mx-auto" src="assets/img/lab4/Jupyter_code_Lab4.PNG" alt="" />
+                                    
                                     <video controls="controls" width="800" height="600" 
                                             name="Video Name" src="assets/img/lab4/IMG_1092.MOV"></video>
                                     </p>
@@ -760,11 +759,70 @@
                                     <!-- Project Details Go Here-->
                                     <h2 class="text-uppercase">Lab 5</h2>
                                     <p class="item-intro text-muted">Prox, TOF, Obstacle avoidance</p>
-                                    <img class="img-fluid d-block mx-auto" src="https://www.biblicalministries.org/wp-content/uploads/2019/01/9-3-0-1776930_obstacles_web.jpg" alt="" />
-                                    <p>Description of lab</p>
-                                    <ul class="list-inline">
+                                    <p>The purpose of the lab was to enable the robot to perform obstacle avoidance by putting distance sensors
+                                        on the car, getting them working, and then attempting fast motion around the room without crashing into obstacles. 
+                                        </p>
+                                        <p>Parts Required:</p>
+                                        <div class="parent">
+                                                <ul>
+                                                    <li>1 x SparkFun RedBoard Artemis Nano</li>
+                                                    <li>1 x USB A-to-C cable</li>
+                                                    <li>1 x 4m ToF sensor</li>
+                                                    <li>1 x 20cm proximity sensor</li>
+                                                    <li>1 x Li-Ion 3.7V 400 or 500mAh battery</li>
+                                                    <li>1 x Sparkfun Qwiic motor driver</li>
+                                                    <li>1 x R/C stunt car and NiCad battery</li>
+                                                    <li>1 x Qwiic connector</li>
+                                                    <li>1 x Gray target</li>
+                                                    <li>1 x Ruler or graph paper</li>  
+                                                    <li>1 x Double sided tape</li>        
+                                                    <li>1 x Small screwdriver</li>
+                                                    <li>1 x Wirecutter</li>
+                                                </ul>
+                                        </div>
+                                    <p><b><font size = "+2">>Lab 5a: Obstacle Avoidance</font></b></p> 
+                                    <p><b>Prelab:</b></p>    
+                                    <p>I read over the datasheet and manual for the proximity board and found the device address to be 0x60.
+                                        I also read over the documentation for the ToF breakout baord, which has an I2C address of 0x52.
+                                    </p>
+                                    <!--Given their range and angular sensitivity, 
+                                        think about where you will place them on your robot to best detect obstacles. 
+                                        Discuss scenarios where your robot will miss obstacles.--> 
+                                    <p>
+                                        The Proximity Sensor Breakout has no dead zone and can read from 20 cm away all the way up to the face of the sensor. it's not very
+                                        acrruate for detecting the exact quantitative distance readings but is good at seeing if objects appear in front of it. 
+                                    </p>
+                                    <p>The ToF breakout board has a FoV from 15-27 degrees so it's basically just for looking straight forwards. It has a max distance of either
+                                        136, 290, or 360 cm in the dark but this distance is way less in ambient light (where it's more sensitive)</p>.
+                                    <!--Many distance sensors are based on infrared trasmission. Discuss a couple, highlight the differences in their fuctionality 
+                                        and the pros/cons of each. How would/will you use them on your robot?-->
+                                    <p>Finish prelab</p>
+                                    
+                                    <p><b>Proximity Sensor</b></p> 
+                                    <p>Using the Arduino library manager, I installed the SparkFun VCNL4040 Proximity Sensor Library, hooking up the sensor to the 
+                                        Artemis board using a QWIIC connector. I scanned the I2C channel to find the sensor at 0x60, which matches with the datasheet.
+                                        I could then test the sensor using the Example4_AllReadings script.
+                                    </p>
+                                    <!--Test your proximity sensor using the “..\Arduino\libraries\SparkFun_VCNL4040_Proximity_Sensor_Library\examples\Example4_AllReadings”. 
+                                        Map the sensor readings to the actual distance. 
+                                        Try objects with different color and texture, and in different lighting conditions. 
+                                        Explain if/why the sensor is sensitive to the particular parameter. 
+                                        Also, note how frequent measurements are updated and how long it takes to read them.-->
+                                    <p></p>
+
+
+
+
+                                    <p><b><font size = "+2">>Lab 5b: Obstacle Avoidance on My Virtual Robot</font></b></p> 
+                                    <p>I downloaded and setup the lab5 base code in my VM like I had previously done in Lab 4. I then
+                                        started the simulator from the lab5-manager using <code>lab5-manager</code>, before I changed the directory to the lab5
+                                        work folder and started the Jupyter server in my VM (in the same way as Lab 4). I then opened the lab5.ipynb notebook to start the lab.
+                                    </p>
+
+                                        <ul class="list-inline">
                                         <li>Date: </li>
                                     </ul>
+                                    <p></p>
                                     <button class="btn btn-primary" data-dismiss="modal" type="button">
                                         <i class="fas fa-times mr-1"></i>
                                         Close Project
