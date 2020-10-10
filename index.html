@@ -873,36 +873,34 @@
                                     <p></p>
 
 
-
-                                    
+                                 
                                     <p><b>Time of Flight Sensor</b></p> 
                                     <p>Using the Arduino library manager, I installed the SparkFun VL53L1X 4m laser distance sensor library, hooking up the sensor to the 
                                         Artemis board using a QWIIC connector. I scanned the I2C channel to find the sensor at 0x60, which matches with the datasheet.
                                         I could then test the sensor using the Examples\SparkFun_VL53L1X_4m_Laser_Distance_Sensor\Example1_ReadDistance script, after first running the Calibration
-                                        script with the gray target we were given with our kit, getting an average offset of 21 after running it 4 times. 
+                                        script with the gray target we were given with our kit. This calibration code didn't work as expected(?), so I added in startRanging and stopRanging() which
+                                        then allowed me to run the code correctly.  
                                     </p>    
                                     <p>The timing budget (the time required by the sensor to perform a range measurement) has a min and max of 20ms and 1000ms respectively. If
                                         we wanted to collect the most amount of data and run the robot in Short Distance mode, we would want to set the timing budget to be 20 ms. 
                                         This also takes into account power consumption, and how we don't always want the sensor to constantly be collecting data). The repeatibility error
-                                        is higher at lower timing budgets but the order of magnitude of the error seems low compared to how fast the robot is moving (and the large amount
-                                        of distance it can cover quickly)
-                                        Because of this, I've decided to set the timing budget to be 20 ms. 
+                                        is higher at lower timing budgets do I set the timing budget to be a little higher than 20 ms, as <b>30 ms</b>. 
                                     </p>
                                     <p>
-                                        We also consider the max speed we know the robot can go at in order to determine t
+                                        We also consider the max speed we know the robot can go at in order to determine 
                                         the measurement period (the time between when measurements start and end, when the sensor is in low power mode). The robot has a max speed of around 8 ft/s
                                         and I think the next part of the lab involves us trying to make it go as fast as possible.  
                                         I guess to ensure the robot won't collide with the wall or any objects when traveling quickly, I'm estimating that we want to 
                                         at least check the robot's position every 1 feet. Doing t = d/v, I then got a value of at least 125 ms.
                                     </p>
-                                    <p>Because of this, I know that the measurement period should be around 125 - 20 = 105 ms (assuming the timing budget is 30 ms). I rounded down to get a 
-                                        period of 100 ms. 
+                                    <p>Because of this, I know that the measurement period should be around 125 - 30 = 95 ms (assuming the timing budget is 30 ms). I rounded down to get a 
+                                        period of 90 ms. 
                                      </p>
                                     <p>I set these values using:</p>
                                     <div class="parent">
                                         <ul>
-                                            <li><code>distanceSensor.setTimingBudgetInMs(20);</code></li>
-                                            <li><code>distanceSensor.setIntermeasurementPeriod(100);</code></li>
+                                            <li><code>distanceSensor.setTimingBudgetInMs(30);</code></li>
+                                            <li><code>distanceSensor.setIntermeasurementPeriod(90);</code></li>
                                         </ul>
                                     </div>  
                                     <p>To optimize the ranging performance, I decided to use the short distance mode since the room I'm running the robot in is not the
@@ -926,7 +924,7 @@
                                         before the mean started deviating from the actual distance (increasing at a slower rate than it's original linear pace) and the SD drastically increased as well. 
                                         I can then conclude that the sensor is extremely accurate within at least a 1250 mm range. 
                                     </p>
-                                    <p>I also tested in a pitch black room as opposed to my normal well lit room, and I could see that the results were a little bit closer
+                                    <p>I also tested in a pitch black room as opposed to my normal well lit room as shown in the graph, and I could see that the results were a little bit closer
                                         to the actual distances for the distances further away than 1250 mm. I think this is due to the sensor being in Short Distance mode as well
                                         as ambient light starting to interfere at further distances in lighter conditions, and not so much in dark conditions where it has slighter
                                         better performance. I also tested with different colors and textures with the results being virtually identical (as opposed to the proximity sensor), 
@@ -946,7 +944,8 @@
                                     <img class="img-fluid d-block mx-auto" src="assets/img/lab5/IMG_1140.JPG" alt="" />
                                     <p>I first mounted the sensors, Li-Ion battery, and Artemis board firmly to the car using the double-side tape from 
                                         my kit and a bit of cardboard for the proximity and ToF sensors at the front. I daisy-chained all the sensors, the motor
-                                        driver, and the Artemis board using QWIIC connectors. 
+                                        driver, and the Artemis board using QWIIC connectors, and I also made a cardboard bumper so I would have a smooth surface to mount
+                                        the sensors on, angled slightly upwards to it wouldn't accidentally detect the floor. 
                                     </p>
                                     
 
@@ -958,31 +957,28 @@
                                         work folder and started the Jupyter server in my VM (in the same way as Lab 4). I then opened the lab5.ipynb notebook to start the lab.
                                     </p>
                                     <p>To do object avoidance for the virtual robot, I used data from the robot's range finder. In an infinite while loop, I first started off by having the 
-                                        robot turn whenever it saw a wall through an if-else statement. Basically, if the robot saw a distance less than or equal to 1,
+                                        robot turn whenever it saw a wall through a condition in a while loop. Basically, if the robot saw a distance less than or equal to 0.5,
                                         I made the robot stop and turn 
                                         around its axis at a speed of 1 for 0.25 seconds. Else I set the velocity to 1 and kept the robot going forwards for 0.1 seconds. 
                                     </p>
                                     <p>After trying this out, I saw that I could fine tune this to let the robot be able to get closer to the wall without crashing.
                                         This just required some trial and error since the robot sometimes wasn't moving at a perfect perpendicular angle to a wall, meaning that
                                         since the laser distance finder on the virtual robot seemed to primarily point straight in front of it, I couldn't make the value too small
-                                        or else the robot might sometimes not see the wall and crash. I saw that a distance of
-                                        0.5 was too low and led to collisions when the robot was traveling at an angle, while a value of 0.7 seemed to be about right to 
-                                        take into account the nonperpendicular routes the robot might take to a wall. This also let the virtual robot get pretty close to the walls as shown. 
+                                        or else the robot might sometimes not see the wall and crash. I had robot move at 90 degree angles to be less likely to approach a wall at a random
+                                        angle and collide with it, especially when the robot is driving almost parallel to a wall. I also settled on alternating the angle so the robot
+                                        could take a more random path (it kept going in a rectangle if I just had it be the same angle).
                                     </p>
                                     <video controls="controls" width="800" height="600" 
                                         name="Video Name" src="assets/img/lab5/My Movie.mp4"></video>
                                     <p>I played around with the durations for the times the robot went forwards or turned using the time.sleep() command
                                         which maintains the velocity designated before for the amount of seconds specified in the parameter to the sleep function. I made the robot turn about
-                                        22.5 degrees each time (1/4 of 90 degrees) which ended up being a speed of 2 for a duration of 0.25 seconds. I also experimented
+                                        90 degrees using the set_vel() function and also experimented
                                         with the linear speeds of the virtual robot in terms of trying to minimize collisions. You can make the robot go faster but then you have to 
-                                        make the distance in the if-statement a little larger to compensate for this. I settled on a linear speed of 0.5, which seemed like a reasonable speed.
+                                        make the distance in the while-statement a little larger to compensate for this. I settled on a linear speed of 0.75 and a distance of 0.3 in the while loop. 
                                     </p>
                                     <img class="img-fluid d-block mx-auto" src="assets/img/lab5/code.PNG" alt="" />
-                                    <p>There are a few situations where my obstacle avoidance code doesn't always work, such as when the robot is approaching an obstacle 
-                                        sticking out at the left or right side of the robot, which it would be unable to see since it lacks peripheral vision. To get rid of this 
-                                        problem entirely, you would make the robot turn in a 360 degree circle all around and check every 45 degrees or so to check
-                                        that there are no obstacles. Obviously though, this can be a bit slow so the next best thing would be to increase the distance in your
-                                        if statement or check more frequently (minimize the delay between each of our measurements). 
+                                    <p> There are situations after time where the robot will deviate from its 90 degree angles and increasingly become offset from the maze's grid,
+                                        becoming more likely to run into obstacles since it starts to bounce into the wall at more random angles. 
                                     </p>
                                         <ul class="list-inline">
                                         <li>Date: </li>
