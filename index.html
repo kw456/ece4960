@@ -830,7 +830,7 @@
                                         Artemis board using a QWIIC connector. I scanned the I2C channel to find the sensor at <b>0x60</b>, which matches with the datasheet.
                                         I could then test the sensor using the Examples\SparkFun_VCNL4040_Proximity_Sensor_Library\Example4_AllReadings script.
                                     </p>
-                                    <p>Here is a graph of the proximity value readings vs distance for 3 different colored objects, with the tests being conducted in a well lit room.
+                                    <p>Here is a graph of the proximity value readings vs distance for 3 different colored objects in a well lit room.
                                         One object was a square white box, another was a pack of yellow sticky notes,
                                         and the last was my black notebook. I was able to see that the different colors did indeed impact the 
                                         proximity value. The darker the color, the lower the value. This is because the IR is likely being absorbed more by darker materials as opposed to being
@@ -843,15 +843,12 @@
                                         I graphed them using a log scale. 
                                     </p>
                                     <p>I then tested the white box in a different ambient light environment (I turned the lights off and test it in the dark). The values were very close 
-                                        and basically indistinguishable from one another. I think the ambient light (visible light) doesn't interfere with the IR waves of the sensor, meaning that
-                                        most normal ambient light levels shouldn't have a major impact on the proximity value. I did test the sensor once in bright sunlight and it did 
-                                        not seem to work very well at all so I think a thing to note is that it has decreased performance in high ambient light. 
+                                        and basically indistinguishable from one another meaning ambient light levels shouldn't have a major impact on the proximity value. 
                                     </p>
                                     <img class="img-fluid d-block mx-auto" src="assets/img/lab5/lightvdark.PNG" alt="" />
-                                    <p>I also tested different types of textures. I first tried a cloth black object to compare to my solid matte black phone case, but there didn't seem to be 
-                                        significant differences there. However, when I tested a black matte surface vs a black reflective surface, I saw higher values for the reflective surface because
+                                    <p>I also tested different types of textures. When I tested a black matte surface vs a black reflective surface, I saw higher values for the reflective surface because
                                     similar to the white and yellow objects previously, some of the reflective surface reflected more of the IR rays as opposed to the phone case where the light
-                                    was mostly absorbed. This is a downside to the proximity sensor as it depends on the target's reflectivity. I tested with a fuzzy white object as well but there honestly didn't seem to be a huge difference between that object and the flat, smooth one. </p>
+                                    was mostly absorbed. This is a downside to the proximity sensor as it depends on the target's reflectivity.</p>
                                     <img class="img-fluid d-block mx-auto" src="assets/img/lab5/mattevreflect.PNG" alt="" />
                                     <p>Lastly, I looked at the ambient light and white level data. The ambient light was lower the closer the object was to the sensor, as when it was closer it blocked
                                         more of the ambient light to hit the sensor. Additionally, the black object had the lowest ambient light and white levels due to the same reasons stated previously. 
@@ -863,10 +860,10 @@
                                         a fairly high rate. I found it as follows:</p>
                                         <pre><code>
                                             <div align = "left">
-                                                unsigned long time0 = micros(); 
-                                                    unsigned int proxValue = proximitySensor.getProximity();
-                                                    unsigned long measTime = micros() - time0;
-                                                    Serial.println(measTime);</div>
+                                             unsigned long time0 = micros(); 
+                                             unsigned int proxValue = proximitySensor.getProximity();
+                                             unsigned long measTime = micros() - time0;
+                                             Serial.println(measTime);</div>
                                                 
                                         </code></pre>
                                     <p>However, I noticed that it takes about 4 seconds for the
