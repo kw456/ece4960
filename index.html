@@ -792,19 +792,17 @@
                                         think about where you will place them on your robot to best detect obstacles. 
                                         Discuss scenarios where your robot will miss obstacles.--> 
                                     <p>
-                                        The Proximity Sensor Breakout apparently has no dead zone and can read from 0 cm (the face of the sensor) to about 20 cm away. However,
+                                        The Proximity Sensor Breakout can read from 0 cm (the face of the sensor) to about 20 cm away. However,
                                         as shown by the Gaussian-shaped angular sensitivity curve in the datasheet, it doesn't have a wide angular range. It's also not very
-                                        accurate for detecting the exact quantitative distance readings but it is good at seeing if objects appear in front of it. I think ideally we would
+                                        accurate for detecting quantitative distance readings but it is good at seeing if objects appear in front of it. I think ideally we would
                                         walk to put it on the front of the car to ensure we are not bumping into objects in front of the robot, but they'll be scenarios where the robot will bump into
                                         things on the side since it basically lacks peripheral vision or sensors. Additionally, just having that one sensor in the front would obviously mean the robot would
-                                        not be able to see behind itself and would therefore run into any items behind it (and by that logic, also objects above it and any bumps
-                                        in the ground as well)). Also, since the range is only 20 mm, there might be situations where the robot is close to an object but does not detect
+                                        not be able to see behind itself and would therefore run into any items behind it. Also, since the range is only 20 mm, there might be situations where the robot is close to an object but does not detect
                                         it due to inaccuracies in the sensor or being just over 20 mm away, meaning the robot would not be able to react/stop in time. 
                                     </p>
                                     <p>The ToF breakout board has a FoV from 15-27 degrees so it's basically just for looking straight forwards as well. It has a max distance of either
                                         136, 290, or 360 cm in the dark but this distance is less in ambient light (where it's more sensitive).</p>
-                                    <p>It will have more difficulty in
-                                                terms of sensitivity to objects in bright light, and it will also have the same narrow FoV problems as the proximity sensor. However, it is much better at
+                                    <p>It will also have the same narrow FoV problems as the proximity sensor. However, it is much better at
                                                 quantitative measurement as opposed to the proximity sensor, and is less sensitive to color and texture. Putting it in the front of the car is the best approach
                                                 since the car is primarily driving forwards and then turning when it sees obstacles. The car would miss seeing obstacles similar to the proximity sensor,
                                                 due to the sensor's position in the front, but it would have less problems with range since the range is 1.3m as opposed to 20 mm. </p> 
@@ -829,17 +827,12 @@
                                     
                                     <p><b>Proximity Sensor</b></p> 
                                     <p>Using the Arduino library manager, I installed the SparkFun VCNL4040 Proximity Sensor Library, hooking up the sensor to the 
-                                        Artemis board using a QWIIC connector. I scanned the I2C channel to find the sensor at 0x60, which matches with the datasheet.
+                                        Artemis board using a QWIIC connector. I scanned the I2C channel to find the sensor at <b>0x60</b>, which matches with the datasheet.
                                         I could then test the sensor using the Examples\SparkFun_VCNL4040_Proximity_Sensor_Library\Example4_AllReadings script.
                                     </p>
-                                    <!--Test your proximity sensor using the “..\Arduino\libraries\SparkFun_VCNL4040_Proximity_Sensor_Library\examples\Example4_AllReadings”. 
-                                        Map the sensor readings to the actual distance. 
-                                        Try objects with different color and texture, and in different lighting conditions. 
-                                        Explain if/why the sensor is sensitive to the particular parameter. 
-                                        Also, note how frequent measurements are updated and how long it takes to read them.-->
                                     <p>Here is a graph of the proximity value readings vs distance for 3 different colored objects, with the tests being conducted in a well lit room.
                                         One object was a square white box, another was a pack of yellow sticky notes,
-                                        and the last was my black phone. All were roughly the same size (or at least close enough), and I was able to see that the different colors did indeed impact the 
+                                        and the last was my black notebook. I was able to see that the different colors did indeed impact the 
                                         proximity value. The darker the color, the lower the value. This is because the IR is likely being absorbed more by darker materials as opposed to being
                                         reflected as for light materials, meaning the reading is lower.
                                     </p>
@@ -869,10 +862,12 @@
                                     <p> It takes about 630 us each for each of the getWhite(), getAmbient(), and getProximity() functions, which is
                                         a fairly high rate. I found it as follows:</p>
                                         <pre><code>
+                                            <div align = "left">
                                                 unsigned long time0 = micros(); 
-                                                unsigned int proxValue = proximitySensor.getProximity();
-                                                unsigned long measTime = micros() - time0;
-                                                Serial.println(measTime);
+                                                    unsigned int proxValue = proximitySensor.getProximity();
+                                                    unsigned long measTime = micros() - time0;
+                                                    Serial.println(measTime);</div>
+                                                
                                         </code></pre>
                                     <p>However, I noticed that it takes about 4 seconds for the
                                         data to stabilize after a sudden change. The sensor readings can be a bit jumpy, so it's definitely better for qualitative as opposed to quantitative
