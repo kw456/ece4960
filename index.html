@@ -810,15 +810,22 @@
                                                 due to the sensor's position in the front, but it would have less problems with range since the range is 1.3m as opposed to 20 mm. </p> 
                                     <!--Many distance sensors are based on infrared trasmission. Discuss a couple, highlight the differences in their fuctionality 
                                         and the pros/cons of each. How would/will you use them on your robot?-->
-                                    <p>There are a multitude of distance sensors based on IR transmission. In particular, there are amplitude based IR sensors which do not work
-                                        in high ambient light and depend on a target's reflectivity. However, they are usually cheap, small, and lightweight, and can be used
-                                        for sensor fusion with other more reliable sensors.
-                                        There are also IR triangulation sensors which are insensitive to surface color, texture, and ambient light but also do not work in 
-                                        high ambient light and have a low sample rate. Lastly, there are ToF sensors (which we are using as well) which are a bit more
-                                        expensive than amplitude-based IR sensors but are insensitive to surface color, texture, and ambient light. We will be using this sensor
-                                        primarily for obstacle avoidance due to its better accuracy, range, and decreased light noise sensitivity than other sensors, with the 
-                                        proximity sensor as a backup/offering supporting data for sensor fusion. 
-                                         </p>
+                                    <p>There are a multitude of distance sensors based on IR transmission.</p>
+                                    <div class= "parent">
+                                        <ul>
+                                            <li> Amplitude based IR sensors do not work
+                                            in high ambient light and depend on a target's reflectivity. However, they are usually cheap, small, and lightweight, and can be used
+                                            for sensor fusion with other more reliable sensors.
+                                            <li>IR triangulation sensors are insensitive to surface color, texture, and ambient light but also do not work in 
+                                                    high ambient light and have a low sample rate.</li> 
+                                            <li>Lastly, there are ToF sensors (which we are using as well) which are a bit more
+                                                    expensive than amplitude-based IR sensors though cheaper than triangulation sensors. 
+                                                    They are insensitive to surface color, texture, and ambient light. We will be using this sensor
+                                                    primarily for obstacle avoidance due to its better accuracy, range, and decreased light noise sensitivity than other sensors, with the 
+                                                    proximity sensor as a backup/offering supporting data for sensor fusion. 
+                                            </li>
+                                        </ul>
+                                    </div>
                                     
                                     <p><b>Proximity Sensor</b></p> 
                                     <p>Using the Arduino library manager, I installed the SparkFun VCNL4040 Proximity Sensor Library, hooking up the sensor to the 
@@ -860,7 +867,14 @@
                                     <img class="img-fluid d-block mx-auto" src="assets/img/lab5/amblight.PNG" alt="" />
                                     <img class="img-fluid d-block mx-auto" src="assets/img/lab5/whitelevel.PNG" alt="" />
                                     <p> It takes about 630 us each for each of the getWhite(), getAmbient(), and getProximity() functions, which is
-                                        a fairly high rate. However, I noticed that it takes about 4 seconds for the
+                                        a fairly high rate. I found it as follows:</p>
+                                        <pre><code>
+                                                unsigned long time0 = micros(); 
+                                                unsigned int proxValue = proximitySensor.getProximity();
+                                                unsigned long measTime = micros() - time0;
+                                                Serial.println(measTime);
+                                        </code></pre>
+                                    <p>However, I noticed that it takes about 4 seconds for the
                                         data to stabilize after a sudden change. The sensor readings can be a bit jumpy, so it's definitely better for qualitative as opposed to quantitative
                                         measurements.  
                                     </p>
