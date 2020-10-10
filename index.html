@@ -877,13 +877,13 @@
                                     <p><b>Time of Flight Sensor</b></p> 
                                     <p>Using the Arduino library manager, I installed the SparkFun VL53L1X 4m laser distance sensor library, hooking up the sensor to the 
                                         Artemis board using a QWIIC connector. I scanned the I2C channel to find the sensor at 0x60, which matches with the datasheet.
-                                        I could then test the sensor using the Examples\SparkFun_VL53L1X_4m_Laser_Distance_Sensor\Example1_ReadDistance script, after first running the Calibration
+                                        I could then test the sensor using the Example1_ReadDistance script, after first running the Calibration
                                         script with the gray target we were given with our kit. This calibration code didn't work as expected(?), so I added in startRanging and stopRanging() which
                                         then allowed me to run the code correctly.  
                                     </p>    
-                                    <p>The timing budget (the time required by the sensor to perform a range measurement) has a min and max of 20ms and 1000ms respectively. If
+                                    <p>The timing budget has a min and max of 20ms and 1000ms respectively. If
                                         we wanted to collect the most amount of data and run the robot in Short Distance mode, we would want to set the timing budget to be 20 ms. 
-                                        This also takes into account power consumption, and how we don't always want the sensor to constantly be collecting data). The repeatibility error
+                                        This also takes into account power consumption, and how we don't always want the sensor to constantly be collecting data. The repeatibility error
                                         is higher at lower timing budgets do I set the timing budget to be a little higher than 20 ms, as <b>30 ms</b>. 
                                     </p>
                                     <p>
@@ -908,7 +908,7 @@
                                         going at 8 ft/s, knowing that the coasting distance (from Lab 3) was around 5 feet, and that I can cut this distance down by implementing 
                                         reverse motor controls (though not too much because then the car will flip). I set this mode using <code> distanceSensor.setDistanceModeShort();</code>.
                                     </p>
-                                    <p>Sigma (the estimation of the SD of the measurement) and signal (the amplitude of the signal reflected). It appears the most common errors are
+                                    <p>It appears the most common errors are
                                         a signal fail or a wrapped target fail, which seem to be due to shaking or sudden movements that the sensor sees. Since it is sensitive to these sudden
                                         movements, I can use these failure mode indications to ignore the readings that result during those errors. 
                                     </p>
@@ -948,9 +948,11 @@
                                         the sensors on, angled slightly upwards to it wouldn't accidentally detect the floor. 
                                     </p>
                                     <p></p>
+                                    <p>I incrementally tested the vehicle, starting out with a speed of around 80 on both motors. I could then figure out the
+                                        </p>
                                     <video controls="controls" width="800" height="600" 
                                     name="Video Name" src="assets/img/lab5/Obstacles.mp4"></video>
-                                   
+                                    <p>In terms of areas of improvement, I would say that </p>
 
                                     <p></p>
                                     <p><b><font size = "+2">>Lab 5b: Obstacle Avoidance on My Virtual Robot</font></b></p> 
