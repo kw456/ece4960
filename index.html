@@ -782,7 +782,7 @@
                                                     <li>1 x Wirecutter</li>
                                                 </ul>
                                         </div>
-                                    <p><b><font size = "+2">>Lab 5a: Obstacle Avoidance</font></b></p> 
+                                    <p><b><font size = "+2"> Lab 5a: Obstacle Avoidance</font></b></p> 
                                     <p><b>Prelab:</b></p>    
                                     <p>I read over the datasheet and manual for the proximity board and found the device address to be 0x60.
                                         I also read over the documentation for the ToF breakout baord, which has an I2C address of 0x52.
@@ -791,26 +791,154 @@
                                         think about where you will place them on your robot to best detect obstacles. 
                                         Discuss scenarios where your robot will miss obstacles.--> 
                                     <p>
-                                        The Proximity Sensor Breakout has no dead zone and can read from 20 cm away all the way up to the face of the sensor. it's not very
-                                        acrruate for detecting the exact quantitative distance readings but is good at seeing if objects appear in front of it. 
+                                        The Proximity Sensor Breakout apparently has no dead zone and can read from 0 cm (the face of the sensor) to about 20 cm away. However,
+                                        as shown by the Gaussian-shaped angular sensitivity curve in the datasheet, it doesn't have a wide angular range. It's also not very
+                                        accurate for detecting the exact quantitative distance readings but it is good at seeing if objects appear in front of it. I think ideally we would
+                                        walk to put it on the front of the car to ensure we are not bumping into objects in front of the robot, but they'll be scenarios where the robot will bump into
+                                        things on the side since it basically lacks peripheral vision or sensors. Additionally, just having that one sensor in the front would obviously mean the robot would
+                                        not be able to see behind itself and would therefore run into any items behind it (and by that logic, also objects above it and any bumps
+                                        in the ground as well)). Also, since the range is only 20 mm, there might be situations where the robot is close to an object but does not detect
+                                        it due to inaccuracies in the sensor or being just over 20 mm away, meaning the robot would not be able to react/stop in time. 
                                     </p>
-                                    <p>The ToF breakout board has a FoV from 15-27 degrees so it's basically just for looking straight forwards. It has a max distance of either
-                                        136, 290, or 360 cm in the dark but this distance is way less in ambient light (where it's more sensitive)</p>.
+                                    <p>The ToF breakout board has a FoV from 15-27 degrees so it's basically just for looking straight forwards as well. It has a max distance of either
+                                        136, 290, or 360 cm in the dark but this distance is less in ambient light (where it's more sensitive)</p>. It will have more difficulty in
+                                        terms of sensitivity to objects in bright light, and it will also have the same narrow FoV problems as the proximity sensor. However, it is much better at
+                                        quantitative measurement as opposed to the proximity sensor, and is less sensitive to color and texture. Putting it in the front of the car is the best approach
+                                        since the car is primarily driving forwards and then turning when it sees obstacles. The car would missing seeing obstacles similar to the proximity sensor,
+                                        due to the sensor's position in the front, but it would have less problems with range since the range is 1.3m as opposed to 20 mm. 
                                     <!--Many distance sensors are based on infrared trasmission. Discuss a couple, highlight the differences in their fuctionality 
                                         and the pros/cons of each. How would/will you use them on your robot?-->
-                                    <p>Finish prelab</p>
+                                    <p>There are a multitude of distance sensors based on IR transmission. In particular, there are amplitude based IR sensors which do not work
+                                        in high ambient light and depend on a target's reflectivity. However, they are usually cheap, small, and lightweight, and can be used
+                                        for sensor fusion with other more reliable sensors.
+                                        There are also IR triangulation sensors which are insensitive to surface color, texture, and ambient light but also do not work in 
+                                        high ambient light and have a low sample rate. Lastly, there are ToF sensors (which we are using as well) which are a bit more
+                                        expensive than amplitude-based IR sensors but are insensitive to surface color, texture, and ambient light. We will be using this sensor
+                                        primarily for obstacle avoidance due to its better accuracy, range, and decreased light noise sensitivity than other sensors, with the 
+                                        proximity sensor as a backup/offering supporting data for sensor fusion. 
+                                         </p>
                                     
                                     <p><b>Proximity Sensor</b></p> 
                                     <p>Using the Arduino library manager, I installed the SparkFun VCNL4040 Proximity Sensor Library, hooking up the sensor to the 
                                         Artemis board using a QWIIC connector. I scanned the I2C channel to find the sensor at 0x60, which matches with the datasheet.
-                                        I could then test the sensor using the Example4_AllReadings script.
+                                        I could then test the sensor using the Examples\SparkFun_VCNL4040_Proximity_Sensor_Library\Example4_AllReadings script.
                                     </p>
                                     <!--Test your proximity sensor using the “..\Arduino\libraries\SparkFun_VCNL4040_Proximity_Sensor_Library\examples\Example4_AllReadings”. 
                                         Map the sensor readings to the actual distance. 
                                         Try objects with different color and texture, and in different lighting conditions. 
                                         Explain if/why the sensor is sensitive to the particular parameter. 
                                         Also, note how frequent measurements are updated and how long it takes to read them.-->
+                                    <p>Here is a graph of the proximity value readings vs distance for 3 different colored objects, with the tests being conducted in a well lit room.
+                                        One object was a square white box, another was a pack of yellow sticky notes,
+                                        and the last was my black phone. All were roughly the same size (or at least close enough), and I was able to see that the different colors did indeed impact the 
+                                        proximity value. The darker the color, the lower the value. This is because the IR is likely being absorbed more by darker materials as opposed to being
+                                        reflected as for light materials, meaning the reading is lower.
+                                    </p>
+                                    <img class="img-fluid d-block mx-auto" src="assets/img/lab5/colors.PNG" alt="" />
+                                    <p>All of them show a drastically higher level at a closer distance as opposed to a distance further away. I think this indicates that the proximity sensor
+                                        is best used for objects/obstacles that emerge very close to the robot, as it has a higher sensitivity to that range. This is further emphasized by how
+                                        I graphed them using a log scale. 
+                                    </p>
+                                    <p>I then tested the white box in a different ambient light environment (I turned the lights off and test it in the dark). The values were very close 
+                                        and basically indistinguishable from one another. I think the ambient light (visible light) doesn't interfere with the IR waves of the sensor, meaning that
+                                        most normal ambient light levels shouldn't have a major impact on the proximity value. I did test the sensor once in bright sunlight and it did 
+                                        not seem to work very well at all so I think a thing to note is that it has decreased performance in high ambient light. 
+                                    </p>
+                                    <img class="img-fluid d-block mx-auto" src="assets/img/lab5/lightvdark.PNG" alt="" />
+                                    <p>I also tested different types of textures. I first tried a cloth black object to compare to my solid matte black phone case, but there didn't seem to be 
+                                        significant differences there. However, when I tested a black matte surface vs a black reflective surface, I saw higher values for the reflective surface because
+                                    similar to the white and yellow objects previously, some of the reflective surface reflected more of the IR rays as opposed to the phone case where the light
+                                    was mostly absorbed. This is a downside to the proximity sensor as it depends on the target's reflectivity. I tested with a fuzzy white object as well but there honestly didn't seem to be a huge difference between that object and the flat, smooth one. </p>
+                                    <img class="img-fluid d-block mx-auto" src="assets/img/lab5/mattevreflect.PNG" alt="" />
+                                    <p>Lastly, I looked at the ambient light and white level data. The ambient light was lower the closer the object was to the sensor, as when it was closer it blocked
+                                        more of the ambient light to hit the sensor. Additionally, the black object had the lowest ambient light and white levels due to the same reasons stated previously. 
+                                    I am also assuming the shadows that resulted from when the object was very close to the proximity sensor resulted in the lower white levels for the smaller distances. 
+                                    I can therefore conclude that the sensor is sensitive to ambient light, though the proximity values seem to not be affected by this ambient light. </p>
+                                    <img class="img-fluid d-block mx-auto" src="assets/img/lab5/amblight.PNG" alt="" />
+                                    <img class="img-fluid d-block mx-auto" src="assets/img/lab5/whitelevel.PNG" alt="" />
+                                    <p> It takes about 630 us each for each of the getWhite(), getAmbient(), and getProximity() functions, which is
+                                        a fairly high rate. However, I noticed that it takes about 4 seconds for the
+                                        data to stabilize after a sudden change. The sensor readings can be a bit jumpy, so it's definitely better for qualitative as opposed to quantitative
+                                        measurements.  
+                                    </p>
                                     <p></p>
+
+
+
+                                    
+                                    <p><b>Time of Flight Sensor</b></p> 
+                                    <p>Using the Arduino library manager, I installed the SparkFun VL53L1X 4m laser distance sensor library, hooking up the sensor to the 
+                                        Artemis board using a QWIIC connector. I scanned the I2C channel to find the sensor at 0x60, which matches with the datasheet.
+                                        I could then test the sensor using the Examples\SparkFun_VL53L1X_4m_Laser_Distance_Sensor\Example1_ReadDistance script, after first running the Calibration
+                                        script with the gray target we were given with our kit, getting an average offset of 21 after running it 4 times. 
+                                    </p>    
+                                    <p>The timing budget (the time required by the sensor to perform a range measurement) has a min and max of 20ms and 1000ms respectively. If
+                                        we wanted to collect the most amount of data and run the robot in Short Distance mode, we would want to set the timing budget to be 20 ms. 
+                                        This also takes into account power consumption, and how we don't always want the sensor to constantly be collecting data). The repeatibility error
+                                        is higher at lower timing budgets but the order of magnitude of the error seems low compared to how fast the robot is moving (and the large amount
+                                        of distance it can cover quickly)
+                                        Because of this, I've decided to set the timing budget to be 20 ms. 
+                                    </p>
+                                    <p>
+                                        We also consider the max speed we know the robot can go at in order to determine t
+                                        the measurement period (the time between when measurements start and end, when the sensor is in low power mode). The robot has a max speed of around 8 ft/s
+                                        and I think the next part of the lab involves us trying to make it go as fast as possible.  
+                                        I guess to ensure the robot won't collide with the wall or any objects when traveling quickly, I'm estimating that we want to 
+                                        at least check the robot's position every 1 feet. Doing t = d/v, I then got a value of at least 125 ms.
+                                    </p>
+                                    <p>Because of this, I know that the measurement period should be around 125 - 20 = 105 ms (assuming the timing budget is 30 ms). I rounded down to get a 
+                                        period of 100 ms. 
+                                     </p>
+                                    <p>I set these values using:</p>
+                                    <div class="parent">
+                                        <ul>
+                                            <li><code>distanceSensor.setTimingBudgetInMs(20);</code></li>
+                                            <li><code>distanceSensor.setIntermeasurementPeriod(100);</code></li>
+                                        </ul>
+                                    </div>  
+                                    <p>To optimize the ranging performance, I decided to use the short distance mode since the room I'm running the robot in is not the
+                                        largest. Additionally, the range in short distance mode is about 1.3 meters (4.25 feet) which seems to be an adequate distance to start stopping a robot
+                                        going at 8 ft/s, knowing that the coasting distance (from Lab 3) was around 5 feet, and that I can cut this distance down by implementing 
+                                        reverse motor controls (though not too much because then the car will flip). I set this mode using <code> distanceSensor.setDistanceModeShort();</code>.
+                                    </p>
+                                    <p>Sigma (the estimation of the SD of the measurement) and signal (the amplitude of the signal reflected). It appears the most common errors are
+                                        a signal fail or a wrapped target fail, which seem to be due to shaking or sudden movements that the sensor sees. Since it is sensitive to these sudden
+                                        movements, I can use these failure mode indications to cause the robot to stop or slow down in case it has run into rocky terrain or unexpected obstacles. 
+                                    </p>
+                                    <p>Lastly, I documented the ToF sensor range and accuracy. I had my test setup as shown below, running the sensor in Short Mode since that's 
+                                        the mode I'm using for obstacle avoidance:</p>
+                                    <img class="img-fluid d-block mx-auto" src="assets/img/lab5/IMG_0563.JPG" alt="" />
+                                    <p></p>
+                                    <p>My data is as shown below:</p>
+                                    <img class="img-fluid d-block mx-auto" src="assets/img/lab5/tof.PNG" alt="" />
+                                    <p>I can conclude that the sensor has good repeatability as I ran it three times on 3 different days at roughly the same ambient light (running
+                                        in the same room with the same lights on), resulting in basically identical graphs. I did 100 measurements at each distance point (which was every
+                                        100 mm) and found the mean and SD at each. The ToF SD's were minimal and the ToF means were extremely close to the actual distance all the way up to around 1250 mm, 
+                                        before the mean started deviating from the actual distance (increasing at a slower rate than it's original linear pace) and the SD drastically increased as well. 
+                                        I can then conclude that the sensor is extremely accurate within at least a 1250 mm range. 
+                                    </p>
+                                    <p>I also tested in a pitch black room as opposed to my normal well lit room, and I could see that the results were a little bit closer
+                                        to the actual distances for the distances further away than 1250 mm. I think this is due to the sensor being in Short Distance mode as well
+                                        as ambient light starting to interfere at further distances in lighter conditions, and not so much in dark conditions where it has slighter
+                                        better performance. I also tested with different colors and textures with the results being virtually identical (as opposed to the proximity sensor), 
+                                        meaning this sensor is more insensitive to those aspects of objects.
+                                    </p>
+                                    <p>In terms of the timing measurements, which I measured using the micros() function to time certain functions:</p>
+                                    <div class = "parent">
+                                        <ul>
+                                            <li>Just reading = 725 us</li>
+                                            <li>ToF ranging (with StopRanging) = 2.87 ms</li>
+                                            <li>ToF ranging (no StopRanging) = 2.42 ms</li>
+                                        </ul>
+                                    </div>
+
+                                    <p></p>
+                                    <p><b>Obstacle Avoidance</b></p>
+                                    <img class="img-fluid d-block mx-auto" src="assets/img/lab5/IMG_1140.JPG" alt="" />
+                                    <p>I first mounted the sensors, Li-Ion battery, and Artemis board firmly to the car using the double-side tape from 
+                                        my kit and a bit of cardboard for the proximity and ToF sensors at the front. I daisy-chained all the sensors, the motor
+                                        driver, and the Artemis board using QWIIC connectors. 
+                                    </p>
 
 
 
@@ -820,7 +948,33 @@
                                         started the simulator from the lab5-manager using <code>lab5-manager</code>, before I changed the directory to the lab5
                                         work folder and started the Jupyter server in my VM (in the same way as Lab 4). I then opened the lab5.ipynb notebook to start the lab.
                                     </p>
-
+                                    <p>To do object avoidance for the virtual robot, I used data from the robot's range finder. In an infinite while loop, I first started off by having the 
+                                        robot turn whenever it saw a wall through an if-else statement. Basically, if the robot saw a distance less than or equal to 1,
+                                        I made the robot stop and turn 
+                                        around its axis at a speed of 1 for 0.25 seconds. Else I set the velocity to 1 and kept the robot going forwards for 0.1 seconds. 
+                                    </p>
+                                    <p>After trying this out, I saw that I could fine tune this to let the robot be able to get closer to the wall without crashing.
+                                        This just required some trial and error since the robot sometimes wasn't moving at a perfect perpendicular angle to a wall, meaning that
+                                        since the laser distance finder on the virtual robot seemed to primarily point straight in front of it, I couldn't make the value too small
+                                        or else the robot might sometimes not see the wall and crash. I saw that a distance of
+                                        0.5 was too low and led to collisions when the robot was traveling at an angle, while a value of 0.7 seemed to be about right to 
+                                        take into account the nonperpendicular routes the robot might take to a wall. This also let the virtual robot get pretty close to the walls as shown. 
+                                    </p>
+                                    <video controls="controls" width="800" height="600" 
+                                        name="Video Name" src="assets/img/lab5/My Movie.mp4"></video>
+                                    <p>I played around with the durations for the times the robot went forwards or turned using the time.sleep() command
+                                        which maintains the velocity designated before for the amount of seconds specified in the parameter to the sleep function. I made the robot turn about
+                                        22.5 degrees each time (1/4 of 90 degrees) which ended up being a speed of 2 for a duration of 0.25 seconds. I also experimented
+                                        with the linear speeds of the virtual robot in terms of trying to minimize collisions. You can make the robot go faster but then you have to 
+                                        make the distance in the if-statement a little larger to compensate for this. I settled on a linear speed of 0.5, which seemed like a reasonable speed.
+                                    </p>
+                                    <img class="img-fluid d-block mx-auto" src="assets/img/lab5/code.PNG" alt="" />
+                                    <p>There are a few situations where my obstacle avoidance code doesn't always work, such as when the robot is approaching an obstacle 
+                                        sticking out at the left or right side of the robot, which it would be unable to see since it lacks peripheral vision. To get rid of this 
+                                        problem entirely, you would make the robot turn in a 360 degree circle all around and check every 45 degrees or so to check
+                                        that there are no obstacles. Obviously though, this can be a bit slow so the next best thing would be to increase the distance in your
+                                        if statement or check more frequently (minimize the delay between each of our measurements). 
+                                    </p>
                                         <ul class="list-inline">
                                         <li>Date: </li>
                                     </ul>
