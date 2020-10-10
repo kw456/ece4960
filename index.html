@@ -891,10 +891,10 @@
                                         the measurement period (the time between when measurements start and end, when the sensor is in low power mode). The robot has a max speed of around 8 ft/s
                                         and I think the next part of the lab involves us trying to make it go as fast as possible.  
                                         I guess to ensure the robot won't collide with the wall or any objects when traveling quickly, I'm estimating that we want to 
-                                        at least check the robot's position every 1 feet. Doing t = d/v, I then got a value of at least 125 ms.
+                                        at least check the robot's position every 4 inches. Doing t = d/v, I then got a value of around 37.5 ms.
                                     </p>
-                                    <p>Because of this, I know that the measurement period should be around 125 - 30 = 95 ms (assuming the timing budget is 30 ms). I rounded down to get a 
-                                        period of 90 ms. 
+                                    <p>Because of this, I know that the measurement period should be around 37.5 - 30 (assuming the timing budget is 30 ms). I then set my value to 5, knowing that any value
+                                        below 30 would mean the robot would immediately start ranging again after it completed.
                                      </p>
                                     <p>I set these values using:</p>
                                     <div class="parent">
@@ -910,7 +910,7 @@
                                     </p>
                                     <p>Sigma (the estimation of the SD of the measurement) and signal (the amplitude of the signal reflected). It appears the most common errors are
                                         a signal fail or a wrapped target fail, which seem to be due to shaking or sudden movements that the sensor sees. Since it is sensitive to these sudden
-                                        movements, I can use these failure mode indications to cause the robot to stop or slow down in case it has run into rocky terrain or unexpected obstacles. 
+                                        movements, I can use these failure mode indications to ignore the readings that result during those errors. 
                                     </p>
                                     <p>Lastly, I documented the ToF sensor range and accuracy. I had my test setup as shown below, running the sensor in Short Mode since that's 
                                         the mode I'm using for obstacle avoidance:</p>
@@ -947,10 +947,12 @@
                                         driver, and the Artemis board using QWIIC connectors, and I also made a cardboard bumper so I would have a smooth surface to mount
                                         the sensors on, angled slightly upwards to it wouldn't accidentally detect the floor. 
                                     </p>
-                                    
+                                    <p></p>
+                                    <video controls="controls" width="800" height="600" 
+                                    name="Video Name" src="assets/img/lab5/Obstacles.mp4"></video>
+                                   
 
-
-
+                                    <p></p>
                                     <p><b><font size = "+2">>Lab 5b: Obstacle Avoidance on My Virtual Robot</font></b></p> 
                                     <p>I downloaded and setup the lab5 base code in my VM like I had previously done in Lab 4. I then
                                         started the simulator from the lab5-manager using <code>lab5-manager</code>, before I changed the directory to the lab5
@@ -969,19 +971,20 @@
                                         could take a more random path (it kept going in a rectangle if I just had it be the same angle).
                                     </p>
                                     <video controls="controls" width="800" height="600" 
-                                        name="Video Name" src="assets/img/lab5/My Movie.mp4"></video>
+                                        name="Video Name" src="assets/img/lab5/IMG_0580.mov"></video>
                                     <p>I played around with the durations for the times the robot went forwards or turned using the time.sleep() command
                                         which maintains the velocity designated before for the amount of seconds specified in the parameter to the sleep function. I made the robot turn about
                                         90 degrees using the set_vel() function and also experimented
                                         with the linear speeds of the virtual robot in terms of trying to minimize collisions. You can make the robot go faster but then you have to 
-                                        make the distance in the while-statement a little larger to compensate for this. I settled on a linear speed of 0.75 and a distance of 0.3 in the while loop. 
+                                        make the distance in the while-statement a little larger to compensate for this. I settled on a linear speed of 0.7, and a distance threshold of 0.3,
+                                        also making the robot back up a little before it turns. 
                                     </p>
-                                    <img class="img-fluid d-block mx-auto" src="assets/img/lab5/code.PNG" alt="" />
+                                    <img class="img-fluid d-block mx-auto" src="assets/img/lab5/code2.PNG" alt="" />
                                     <p> There are situations after time where the robot will deviate from its 90 degree angles and increasingly become offset from the maze's grid,
                                         becoming more likely to run into obstacles since it starts to bounce into the wall at more random angles. 
                                     </p>
                                         <ul class="list-inline">
-                                        <li>Date: </li>
+                                        <li>Date: 10/10/20 </li>
                                     </ul>
                                     <p></p>
                                     <button class="btn btn-primary" data-dismiss="modal" type="button">
