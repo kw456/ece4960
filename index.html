@@ -793,7 +793,7 @@
                                         Discuss scenarios where your robot will miss obstacles.--> 
                                     <p>
                                         The Proximity Sensor Breakout can read from 0 cm (the face of the sensor) to about 20 cm away. However,
-                                        as shown by the Gaussian-shaped angular sensitivity curve in the datasheet, it doesn't have a wide angular range. It's also not very
+                                        it doesn't have a wide angular range. It's also not very
                                         accurate for detecting quantitative distance readings but it is good at seeing if objects appear in front of it. I think ideally we would
                                         walk to put it on the front of the car to ensure we are not bumping into objects in front of the robot, but they'll be scenarios where the robot will bump into
                                         things on the side since it basically lacks peripheral vision or sensors. Additionally, just having that one sensor in the front would obviously mean the robot would
@@ -826,9 +826,8 @@
                                     </div>
                                     
                                     <p><b>Proximity Sensor</b></p> 
-                                    <p>Using the Arduino library manager, I installed the SparkFun VCNL4040 Proximity Sensor Library, hooking up the sensor to the 
-                                        Artemis board using a QWIIC connector. I scanned the I2C channel to find the sensor at <b>0x60</b>, which matches with the datasheet.
-                                        I could then test the sensor using the Examples\SparkFun_VCNL4040_Proximity_Sensor_Library\Example4_AllReadings script.
+                                    <p>Using the Arduino library manager, I installed the SparkFun VCNL4040 Proximity Sensor Library and hooked up the sensor. I scanned the I2C channel to find the sensor at <b>0x60</b>, which matches with the datasheet.
+                                        I could then test the sensor using the Example4_AllReadings script.
                                     </p>
                                     <p>Here is a graph of the proximity value readings vs distance for 3 different colored objects in a well lit room.
                                         One object was a square white box, another was a pack of yellow sticky notes,
@@ -900,7 +899,7 @@
                                     <div class="parent">
                                         <ul>
                                             <li><code>distanceSensor.setTimingBudgetInMs(30);</code></li>
-                                            <li><code>distanceSensor.setIntermeasurementPeriod(90);</code></li>
+                                            <li><code>distanceSensor.setIntermeasurementPeriod(5);</code></li>
                                         </ul>
                                     </div>  
                                     <p>To optimize the ranging performance, I decided to use the short distance mode since the room I'm running the robot in is not the
@@ -962,14 +961,14 @@
                                     <p>Through this process, I ended up with the following code:</p>
                                     <pre><code>
                                         <div class = "parent">
-                                            #include <ComponentObject.h>
-                                            #include <RangeSensor.h>
-                                            #include <SparkFun_VL53L1X.h>
-                                            #include <vl53l1x_class.h>
-                                            #include <vl53l1_error_codes.h>
-                                            #include <Wire.h>
-                                            #include <Arduino.h>
-                                            #include <stdint.h>
+                                            #include "ComponentObject.h"
+                                            #include "RangeSensor.h"
+                                            #include "SparkFun_VL53L1X.h"
+                                            #include "vl53l1x_class.h"
+                                            #include "vl53l1_error_codes."
+                                            #include "Wire.h"
+                                            #include "Arduino.h"
+                                            #include "stdint.h"
                                             #include "SCMD.h"
                                             #include "SCMD_config.h" //Contains #defines for common SCMD register names and values
                                             #include "SparkFun_VCNL4040_Arduino_Library.h"
@@ -1066,10 +1065,10 @@
                                     name="Video Name" src="assets/img/lab5/Obstacles.mp4"></video>
                                     <p>I was able to make the robot follow a straight line as well and stop before hitting the wall. I could do this reliably at a speed of around 4.1 ft/s, found since the
                                         green line is 6ft and each run took about 1.57 s.
-                                        Above that, I was able to get the car to follow the straight line and stop, but it was not so great in terms of avoiding obstacles in general. 
+                                        Above that speed, I was able to get the car to follow the straight line and stop, but it was not so great in terms of avoiding obstacles in general. 
                                     </p>
                                     <video controls="controls" width="800" height="600" 
-                                    name="Video Name" src="assets/img/lab5/steraightline5.mp4"></video>
+                                    name="Video Name" src="assets/img/lab5/straightline5.mp4"></video>
                                     <p>In terms of areas of improvement, I would say that the robot definitely did worse with dark (black) objects. Additionally, it didn't seem to 
                                         see clear objects as well. A sensor for color (or a sensor that's distance reading is more insensitive to color and texture) would probably be a better
                                         choice, though obviously more expensive. I think with a little more time you could really fine tune the values in the sensor as well as attempt to 
