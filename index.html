@@ -1069,12 +1069,8 @@
                                     </p>
                                     <video controls="controls" width="800" height="600" 
                                     name="Video Name" src="assets/img/lab5/straightline5.mp4"></video>
-                                    <p>In terms of areas of improvement, I would say that the robot definitely did worse with dark (black) objects. Additionally, it didn't seem to 
-                                        see clear objects as well. A sensor for color (or a sensor that's distance reading is more insensitive to color and texture) would probably be a better
-                                        choice, though obviously more expensive. I think with a little more time you could really fine tune the values in the sensor as well as attempt to 
-                                    </p>
-                                    <p>I had a little time to fine tune the obstacle avoidance code after my first pass, which led to less collisions and better performance.
-                                        I created functions for going forwards, turning, going backwards, etc. and also tuned the distances and times based on the speed the robot was going at.
+
+                                    I created functions for going forwards, turning, going backwards, etc. and also tuned the distances and times based on the speed the robot was going at.
                                         This way, braking in time was more optimized and while it may take a little time to turn, I think the accuracy is a big improvement from before. 
                                     </p>
                                     <video controls="controls" width="800" height="600" 
@@ -1306,10 +1302,109 @@
                                     <h2 class="text-uppercase">Lab 6</h2>
                                     <p class="item-intro text-muted">IMU</p>
                                     <img class="img-fluid d-block mx-auto" src="https://cdn.sparkfun.com//assets/parts/1/3/8/6/0/15335-SparkFun_9DoF_IMU_Breakout_-_ICM-20948__Qwiic_-01b.jpg" alt="" />
-                                    <p>Description of lab</p>
+                                    <p>The purpose of the lab was to setup the IMU, mount it on the robot, and attempt to do PID control on the rotational speed. 
+                                            </p>
+                                            <p>Parts Required:</p>
+                                            <div class="parent">
+                                                    <ul>
+                                                        <li>1 x SparkFun RedBoard Artemis Nano</li>
+                                                        <li>1 x USB A-to-C cable</li>
+                                                        <li>1 x Li-Ion 3.7V 400 or 500mAh battery</li>
+                                                        <li>1 x Sparkfun Qwiic motor driver</li>
+                                                        <li>1 x R/C stunt car and NiCad battery</li>
+                                                        <li>1 x Qwiic connector</li>
+                                                        <li>1 x IMU</li>
+                                                        <li>1 x ToF sensor</li>  
+                                                    </ul>
+                                            </div>
+
+                                        <p><b><font size = "+2"> Lab 6a: IMU, PID, and Odometry</font></b></p> 
+
+                                        <p><b>Prelab:</b></p>    
+                                        <p> I installed SerialPlot to help visualize the data and read through the IMU Sparkfun documentation and datasheet. I also 
+                                            installed the PID Arduino library. 
+                                        </p>
+                                        <p><b>Setting up the IMU</b></p>    
+                                        <p> I confirmed that the SparkFun 9DOF IMU Breakout-ICM 20948 Arduino library was installed and connected the IMU to the Artemis board using
+                                            a QWIIC connector. After scanning the I2C channel, I found the sensor at address 0x69 which matches the datasheet. I ran the
+                                            "\Examples\SparkFun 9DOF IMU Breakout-ICM 20948 Arduino library\Arduino\Example1_Basics" script and observed how the accelerometer had data
+                                            for the x, y, and z orientations. The accelerometer z-axis measurement was always around 960 cm/s^2 due to gravity, as shown below when the IMU is at rest.
+                                        </p>
+                                        <img class="img-fluid d-block mx-auto" src="assets/img/lab6/accelbasic.PNG" alt="" />
+                                        <p>
+                                            When I accelerated in a direction indicated in silkscreen on the IMU, there was an increase in value for
+                                            the accelerometer measurement in that direction. Likewise, I saw that when I rotating around either the x, y, and z axes, there was a 
+                                            corresponding spike in gyroscope value for those relative axes as it measures the rate of angular change. 
+                                        </p>
+
+
+                                        <p><b>Accelerometer</b></p>    
+                                        <p>I first taped the accelerometer to a box so I could easily rotate/move it accurately:</p>
+                                        <img class="img-fluid d-block mx-auto" src="assets/img/lab6/IMG_1182.JPG" alt="" />
+                                        <p>  
+                                            Using the average from 200 measurements each, I found the output at {-90,0,90} degrees pitch and roll: </p>
+                                            <div class="parent">
+                                                    <ul>
+                                                        <li>Pitch (-90 degrees) = -92.55</li>
+                                                        <li>Pitch (0 degrees) = -0.58</li>
+                                                        <li>Pitch (90 degrees) = 92.09</li>
+                                                        <li>Roll (-90 degrees) = -91.58</li>
+                                                        <li>Roll (0 degrees) = 0.70</li>
+                                                        <li>Roll (90 degrees) = 91.86</li>
+                                                    </ul>
+                                            </div>
+                                        
+                                        <p>I also recorded the output on the Plotter for those angles in terms of pitch and then in terms of roll.</p>
+                                        <video controls="controls" width="800" height="600" 
+                                        name="Video Name" src="assets/img/lab6/IMG_1185.mov"></video>
+                                        <p>The accelerometer is pretty accurate once you filter the output or have the IMU at rest (since it's fairly noisy). The angles of pitch and roll using
+                                            the data from the accelerometer were very close to the actual values, with the angles changing from 0-90 or -90-0 at a conversion factor slightly above 1 (around
+                                            1.025 for both pitch and roll) </p>.
+
+                                        <p><b>Gyroscope</b></p>    
+                                        <p>  
+                                        </p>
+
+
+                                        <p><b>Magnetometer</b></p>    
+                                        <p>  
+                                        </p>
+
+
+
+
+                                        <p><b><font size = "+2"> Lab 6b: Odometry - Virtual Robot </font></b></p> 
+                                        <p>The purpose of this lab is to use the plotter tool and visualize the difference between the odometry (estimated use of data
+                                            to estimate change in position) and ground
+                                            truth pose (the actual position) estimates of the virtual robot. 
+                                        </p>
+                                        <p>
+                                            I downloaded the lab6 based code and setup everything as before. I was also able to start the Plotter by starting the lab6-manager
+                                        and pressing "b" and "s" as well as start the Simulator and keyboard teleop tool. I then started the Jupyter server in my work directory.</s></b>
+                                        </p>
+                                        <img class="img-fluid d-block mx-auto" src="assets/img/lab6/code_6b.PNG" alt="" />
+                                        <p>I plotted the odometry and ground truth data points using the Plotter tool and controlling the robot through the keyboard teleop tool.
+                                            I found that it seemed reasonable to send data every 0.1 seconds and saw that the odometry and ground truth data points got further and 
+                                            further away as time went on due to error accumulation. 
+                                        </p>
+                                        <p>In particular, if I had the virtual robot remain stationary for a period of time and then started moving it around, the ground truth
+                                            plot would start from the origin while the odometry graph would already have been accumulating distance in that time, leading to it starting at a different
+                                            point and the whole plot being offset by this error. If I let the program run over a long period of time, this error became even more pronounced and at
+                                            one point, the two points currently being graphed ended up being separated by half a graph's length apart, which is clearly very wrong. While the odometry
+                                            trajectory does resemble that of the ground truth and includes the same general turns/distances, the error and noise in the readings result in inaccuracies that become more pronounced 
+                                            the furrther the program goes on. These inaccuracies seem worse in terms of the turning as opposed to just recording the distance traveled linearly. 
+                                        </p>
+                                        <video controls="controls" width="800" height="600" 
+                                        name="Video Name" src="assets/img/lab5/IMG_1181.MOV"></video>
+                                        <p>In particular, with this video I made the robot go in a loop. In the ground truth graph, this appeared as it should. However, in the odometry graph, 
+                                            you can see the loop is not a perfect circle and instead becomes increasingly more imperfect. The noise also seems to differ with time/speed, becoming
+                                            even worse when I tried running the robot at higher speeds since it looked like the error in terms of distance accumulated faster. 
+                                        </p>
+
                                     <ul class="list-inline">
                                         <li>Date: </li>
                                     </ul>
+                                    <p></p>
                                     <button class="btn btn-primary" data-dismiss="modal" type="button">
                                         <i class="fas fa-times mr-1"></i>
                                         Close Project
