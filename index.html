@@ -1369,17 +1369,23 @@
                                             based on this data and estimated that is was around 200 Hz. Knowing that the alpha value for the low pass filter was T/(T+RC) and that RC was around 33.3 and T was around 200 Hz,
                                             I then used trial and error to figure out the correct alpha value to be around 0.2. I noticed that the lower the value, the smoother the signal looked
                                         but the measurement did seem to lag a little bit more.  </p>
+                                        <img class="img-fluid d-block mx-auto" src="assets/img/lab6/fouriergraph.PNG" alt="" />
                                         <p>My code then ended up being as follows:</p>
                                         <pre><code>
                                                 float alpha = 0.2;
                                                 pitch_a_LPF = alpha * pitch_a + ( 1 - alpha) * old_pitch_a;         
                                                 roll_a_LPF = alpha * roll_a + ( 1 - alpha) * old_roll_a;
                                         </code></pre>
-                                        <img class="img-fluid d-block mx-auto" src="assets/img/lab6/fouriergraph.PNG" alt="" />
+                                        <p>Here is the output when I just filter the pitch output with the low pass filter (and not the roll output):</p>
+                                        <img class="img-fluid d-block mx-auto" src="assets/img/lab6/pitchLPF.PNG" alt="" />
+                                        <p>Here is the output when I just filter the roll output with the low pass filter (and not the pitch output):</p>
+                                        <img class="img-fluid d-block mx-auto" src="assets/img/lab6/rollLPF.PNG" alt="" />
+
                                         <p><b>Gyroscope</b></p>    
                                         <p>  I computed pitch, roll, and yaw angles from the gyroscope:
                                         </p>
-                                        <pre><code> float dt = (millis()-last_time)/1000.;
+                                        <pre><code> 
+                                                float dt = (millis()-last_time)/1000.;
                                                 last_time = millis();
                                                 pitch_g = pitch_g - myICM.gyrY()*dt;
                                                 roll_g = roll_g + myICM.gyrX()*dt;</code></pre>
@@ -1388,7 +1394,8 @@
                                             time. It looks like the drifting is worse in high sampling rates as opposed to lower sampling rates, with the drift becoming evident faster. Other than the drift though, the data looks quite 
                                             accurate and responds faster than the accelerometer due to the filtering there.  </p>
                                             I then filtered out the noise like with the accelerometer and got:
-                                        <pre><code> alpha = 0.02;
+                                        <pre><code> 
+                                            alpha = 0.02;
                                             pitch = (1 - alpha)*(pitch - myICM.gyrY()*dt) + alpha * pitch_a_LPF;
                                             roll = (1 - alpha)*(roll + myICM.gyrX()*dt) + alpha * roll_a_LPF;
                                         </code></pre>
@@ -1449,8 +1456,48 @@
                                         <img class="img-fluid d-block mx-auto" src="assets/img/lab6/compensated.PNG" alt="" />
 
 
+                                        <p><b>2. Lowest possible speed at which you can turn:</b></p>
+                                        <p>I found the lowest speed to be around a motor power of 180, with a gyroscope average of around 280 degrees/sec. </p>
+                                        <p>Below 180, I got this graph for a motor power of 170 (with a single wheel turning and a gyroZ average of around 110):</p>
+                                        <img class="img-fluid d-block mx-auto" src="assets/img/lab6/onemotorturning.PNG" alt="" />
+                                        <p>Additonally, I tested the limit where both wheels stopped turning. This seemed to be around a motor power of 160 as shown below:</p>
+                                        <img class="img-fluid d-block mx-auto" src="assets/img/lab6/notturning.PNG" alt="" />
 
 
+                                        <p><b>3. Accuracy of TOF ranging</b></p>
+                                        <p>We can achieve a stable rotation speed of 180 dps for the vehicle. The lowest sampling rate for the TOF sensor in short range 
+                                            mode is 20 ms. This means that the vehicle can rotate 3.6 degrees in one TOF measurement. At a 0.5m vertical distance from the wall,
+                                            the distance will change from 50cm to 50cm/cos(3.6) = 50.1 cm in 1 TOF measurement. 
+                                            At 0.5m starting from a 45 degree angle from the wall, the distance will change from 50cm to 50cm/sin(48.6) - 50cm/sin(45) = 2.1cm. I think given
+                                            the two parameters signal and sigma, we should be able to get a reliable rotational scan since the system isn't moving too fast and the TOF sensor
+                                            has a sufficient enough range to handle rotating 3.6 degrees in one measurement period. 
+                                        </p>
+
+
+                                        <p><b>4. PID Control</b></p>
+                                        <p>I originally decided to go with PID control since I knew using only P control would lead to a steady-state error because that type 
+                                            of controller requires an error input to function. However, after trying to tune the values with PID, I saw that the rate of change of the error
+                                            didn't seem to help with controlling the robot since the change in error rate didn't seem too significant. In fact, adding in the differential coefficient 
+                                            led to oscillations in the output and made the controller a lot more difficult to tune due to the noise of the sensor (since derivatives amplify HF signals
+                                            more than LF signals). Additionally, when I added in
+                                            Kd, I saw motor clamping that was hard to eliminate. Because of this, I went with
+                                            PI control since it provides zero control error and seems to reach a more stable state. 
+                                        </p>
+                                        <p>I also have to note that a crappy USB-C cable is better suited for this lab since it has a thinner/softer cable that drags less when the vehicle 
+                                            is rotating with the cable connected. 
+                                        </p>
+                                        <p>To tune the PI controller, I leaned towards Heuristic Procedure 1 in the lecture notes. I set Kp to a small value, 
+                                            with KI as 0 at first. I then increased KP until I got overshoot or any oscillations, before decreasing it by a factor of 2. This step took a decent 
+                                            amount of time to eliminate any oscillation, but after that I could move on to the integral coefficient. I slowly increased this from 0 until I saw overshoot, and then
+                                            continued to run the robot until I had eliminated oscillations. I ended up with a factor of 0.001 for Kp but any values greater seemed to produce instability in 
+                                            the system.
+                                        </p>
+                                            I also have a motor power range limiter in runPIDLoop() since the motor is a nonlinear actuator with a limited power range, and we 
+                                            have to implement integral clamping to avoid an integral wind-up issue. This resulted in me putting clamps on anything below a
+                                            motor power level of 80 or anything above a motor level of 255. I also chose to put my setpoint well into the linear range of my system, at a
+                                            setpoint speed of 130. Additionally, I tuned the Kp constant to be 1.2, though I think there is definitely still a little room for improvement
+                                            in terms of tuning the controller if I had a little more time, just to make it a little bit better. 
+                                        </p>
 
 
                                         <p><b><font size = "+2"> Lab 6b: Odometry - Virtual Robot </font></b></p> 
