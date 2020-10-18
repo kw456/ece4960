@@ -1411,9 +1411,40 @@
 
                                         <p></p>
                                         <p><b>PID Control</b></p>
-                                        <p><b>1. Characterize the System</b></p>
-                                        <p>I first changed the IMU settings to have high gyroscope resolution. </p>
-
+                                        <p><b>1. Ramp up and Down Function</b></p>
+                                        <p>I first changed the IMU settings to have the maximum gyroscope resolution be 1000 dps instead of the default value of 250 dps. 
+                                        </p>
+                                        <pre><code>
+                                            ICM_20948_fss_t myFSS;  // This uses a "Full Scale Settings" structure that can contain values for all configurable sensors                         
+                                            myFSS.g = dps1000;       // (ICM_20948_GYRO_CONFIG_1_FS_SEL_e)
+                                            
+                                            myICM.setFullScale( (ICM_20948_Internal_Gyr), myFSS );  
+                                            if( myICM.status != ICM_20948_Stat_Ok){
+                                              Serial.print(F("setFullScale returned: "));
+                                              Serial.println(myICM.statusString());
+                                            }                                          
+                                        </code></pre>
+                                        <p>I then set the motors to run in opposite directions and slowly increase the motor speed and then decrease it over 25 seconds.
+                                            I graphed the motor speed vs. gyroscope reading using SerialPlot. 
+                                        </p>
+                                        <p>  
+                                            Here are the measurements and characteristics of the vehicle: </p>
+                                                <div class="parent">
+                                                        <ul>
+                                                            <li>Max rotation speed = 998 dps</li>
+                                                            <li>Deadband for increasing motor speeds:</li>
+                                                                <ul>
+                                                                    <li>111 for drive 0</li>
+                                                                    <li>145 for drive 1</li>
+                                                                </ul>
+                                                            <li>Deadband for decreasing motor speeds</li>
+                                                                <ul>
+                                                                    <li>103 for drive 0</li>
+                                                                    <li>135 for drive 1</li>
+                                                                </ul>
+                                                            <li>The left motor has a lower deadband and always spins first. 
+                                                        </ul>
+                                                </div>
 
 
 
