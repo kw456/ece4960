@@ -1334,13 +1334,17 @@
                                         <p>
                                             When I accelerated in a direction indicated in silkscreen on the IMU, there was an increase in value for
                                             the accelerometer measurement in that direction. Likewise, I saw that when I rotating around either the x, y, and z axes, there was a 
-                                            corresponding spike in gyroscope value for those relative axes as it measures the rate of angular change. 
+                                            corresponding spike in gyroscope value for those relative axes as it measures the rate of angular change, before it stabilized back to 0. 
                                         </p>
 
 
                                         <p><b>Accelerometer</b></p>    
                                         <p>I first taped the accelerometer to a box so I could easily rotate/move it accurately:</p>
                                         <img class="img-fluid d-block mx-auto" src="assets/img/lab6/IMG_1182.JPG" alt="" />
+                                        <p>I found the pitch and roll as shown below:</p>
+                                        <pre><code> 
+                                            float pitch_a = atan2(myICM.accX(), myICM.accZ())*180/M_PI;
+                                            float roll_a = atan2(myICM.accY(), myICM.accZ())*180/M_PI;</code></pr>
                                         <p>  
                                             Using the average from 200 measurements each, I found the output at {-90,0,90} degrees pitch and roll: </p>
                                             <div class="parent">
@@ -1353,19 +1357,36 @@
                                                         <li>Roll (90 degrees) = 91.86</li>
                                                     </ul>
                                             </div>
-                                        
                                         <p>I also recorded the output on the Plotter for those angles in terms of pitch and then in terms of roll.</p>
                                         <iframe src=" https://www.youtube.com/embed/GabHIlU4zNc"
                                          width="560" height="315" frameborder="0" allowfullscreen></iframe> 
                                         <p>The accelerometer is pretty accurate once you filter the output or have the IMU at rest (since it's fairly noisy). The angles of pitch and roll using
                                             the data from the accelerometer were very close to the actual values, with the angles changing from 0-90 or -90-0 at a conversion factor slightly above 1 (around
-                                            1.025 for both pitch and roll) </p>.
-
+                                            1.025 for both pitch and roll). I notice a little bit of instability when the roll is exactly -90 or 90 degrees (the tan calculation jumps around
+                                        due to noise).</p>
+                                        <p>I wrote Python code using the tutorial on the lab page to plot the frequency response by doing a Fourier Transform. I received the data below for the 
+                                            frequency domain and I was a bit surprised to find that it is incredibly noisy. I had difficulty figuring out a cutoff frequency for my low pass filter 
+                                            based on this data and estimated that is was around 2250 Hz. Knowing that the alpha value for the low pass filter was T/(T+RC),
+                                            I then used trial and error to figure out the correct alpha value to be around 0.2. I noticed that the lower the value, the smoother the signal looked
+                                        but the measurement did seem to lag a little bit more.  </p>
+                                        <p>My code then ended up being as follows:</p>
+                                        <pre><code>
+                                                float alpha = 0.2;
+                                                pitch_a_LPF = alpha * pitch_a + ( 1 - alpha) * old_pitch_a;         
+                                                roll_a_LPF = alpha * roll_a + ( 1 - alpha) * old_roll_a;
+                                        </code></pre>
+                                        <img class="img-fluid d-block mx-auto" src="assets/img/lab6/fouriergrap.PNG" alt="" />
                                         <p><b>Gyroscope</b></p>    
-                                        <p>  
+                                        <p>  I computed pitch, roll, and yaw angles from the gyroscope:
                                         </p>
-
-
+                                        <pre><code> float dt = (millis()-last_time)/1000.;
+                                                last_time = millis();
+                                                pitch_g = pitch_g - myICM.gyrY()*dt;
+                                                roll_g = roll_g + myICM.gyrX()*dt;</code></pre>
+                                        <p>The gyroscope pitch/roll calculation is to accumulate the integral of angular acceleration over time to estimate the angle, which tends
+                                            to drift away over time as shown below. The rolling angle from the accelerometer and gyroscope are about the same at the beginning, but start to drift away from each other over 
+                                        time. It looks like the drifting is worse in high sampling rates as opposed to lower sampling rates. </p>
+                                        <img class="img-fluid d-block mx-auto" src="assets/img/lab6/fourier.png" alt="" />
                                         <p><b>Magnetometer</b></p>    
                                         <p>  
                                         </p>
@@ -1403,7 +1424,7 @@
                                         </p>
 
                                     <ul class="list-inline">
-                                        <li>Date: </li>
+                                        <li>Date: October 17, 2020 </li>
                                     </ul>
                                     <p></p>
                                     <button class="btn btn-primary" data-dismiss="modal" type="button">
