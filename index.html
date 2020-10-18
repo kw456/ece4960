@@ -1453,11 +1453,11 @@
                                                         </ul>
                                                 </div>
                                         <p>The red data is the motor output and the purple is for the gyroscope output: </p>
-                                        <img class="img-fluid d-block mx-auto" src="assets/img/lab6/compensated.PNG" alt="" />
+                                        <img class="img-fluid d-block mx-auto" src="assets/img/lab6/pid1.PNG" alt="" />
 
 
                                         <p><b>2. Lowest possible speed at which you can turn:</b></p>
-                                        <p>I found the lowest speed to be around a motor power of 180, with a gyroscope average of around 280 degrees/sec. </p>
+                                        <p>I found the lowest speed to be around a motor power of 170, with a gyroscope average of around 280 degrees/sec. </p>
                                         <p>Below 180, I got this graph for a motor power of 170 (with a single wheel turning and a gyroZ average of around 110):</p>
                                         <img class="img-fluid d-block mx-auto" src="assets/img/lab6/onemotorturning.PNG" alt="" />
                                         <p>Additonally, I tested the limit where both wheels stopped turning. This seemed to be around a motor power of 160 as shown below:</p>
@@ -1465,12 +1465,12 @@
 
 
                                         <p><b>3. Accuracy of TOF ranging</b></p>
-                                        <p>We can achieve a stable rotation speed of 180 dps for the vehicle. The lowest sampling rate for the TOF sensor in short range 
+                                        <p>We can achieve a stable rotation speed of 170 dps for the vehicle. The lowest sampling rate for the TOF sensor in short range 
                                             mode is 20 ms. This means that the vehicle can rotate 3.6 degrees in one TOF measurement. At a 0.5m vertical distance from the wall,
                                             the distance will change from 50cm to 50cm/cos(3.6) = 50.1 cm in 1 TOF measurement. 
                                             At 0.5m starting from a 45 degree angle from the wall, the distance will change from 50cm to 50cm/sin(48.6) - 50cm/sin(45) = 2.1cm. I think given
-                                            the two parameters signal and sigma, we should be able to get a reliable rotational scan since the system isn't moving too fast and the TOF sensor
-                                            has a sufficient enough range to handle rotating 3.6 degrees in one measurement period. 
+                                            the two parameters signal and sigma, we might get a reliable rotational scan but ideally we would probably want the robot to travel a factor or two slower
+                                            to achieve a more reilable rotational scan.
                                         </p>
 
 
@@ -1486,18 +1486,108 @@
                                         <p>I also have to note that a crappy USB-C cable is better suited for this lab since it has a thinner/softer cable that drags less when the vehicle 
                                             is rotating with the cable connected. 
                                         </p>
+                                        <p>I first wrote my functions for using PID control, so I could then focus the rest of my time on tuning the values.</p>
+                                        <pre><code>
+                                            void runPIDLoop(int setpoint, float KP, float KI, float KD){
+                                                static long startTime = millis();
+                                                static float prevFeedback = 0 ;
+                                                static float prevPIDOutput = 0 ;
+                                                static bool IntegralClamp = false;
+                                              
+                                                if ( millis()-startTime < 10000 ){
+                                                   
+                                                   float pidOutput=computePID(setpoint, KP, KI, KD, prevFeedback, IntegralClamp);
+                                                   float motorStep = prevPIDOutput + pidOutput;
+                                                   if (motorStep > 255) {
+                                                      motorStep = 255;
+                                                      IntegralClamp = true;
+                                                   } else if (motorStep < 80) {
+                                                      motorStep = 80;      
+                                                      IntegralClamp = true;
+                                                   } else {
+                                                      IntegralClamp = false;
+                                                   }
+                                                   turnClockwise(motorStep);     
+                                                   prevFeedback = printData(motorStep); 
+                                                   prevPIDOutput = pidOutput;
+                                                } else {
+                                                  digitalWrite( LED_BUILTIN, LOW );
+                                                  motorStop();
+                                                }
+                                                
+                                              }
+                                              
+                                              float computePID(int setPoint, float KP, float KI, float KD, float input, bool IntegralClamp){
+                                                static long prevTime = millis();
+                                                static float prevError =0;
+                                                static float cumError = 0;
+                                                static float rateError =0 ;
+                                                static float lastError = 0;
+                                              
+                                                long currentTime =  millis();
+                                                long elaspedTime = currentTime - prevTime;
+                                                float error = setPoint - input;
+                                                cumError += error * elaspedTime;
+                                              //  Serial.print("input");  
+                                              //  Serial.print(input);        
+                                              //  Serial.print(", ");
+                                                rateError = (error - lastError) / elaspedTime;
+                                              
+                                                float out = KP * error + KD * rateError;
+                                                if (!IntegralClamp ){
+                                                  out += KI * cumError;
+                                                }
+                                              //  float out = KP * error + KI * cumError + KD * rateError;
+                                                lastError = error;
+                                                prevTime = currentTime;
+                                                return out;
+                                                
+                                              }</code></pre>
                                         <p>To tune the PI controller, I leaned towards Heuristic Procedure 1 in the lecture notes. I set Kp to a small value, 
                                             with KI as 0 at first. I then increased KP until I got overshoot or any oscillations, before decreasing it by a factor of 2. This step took a decent 
                                             amount of time to eliminate any oscillation, but after that I could move on to the integral coefficient. I slowly increased this from 0 until I saw overshoot, and then
-                                            continued to run the robot until I had eliminated oscillations. I ended up with a factor of 0.001 for Kp but any values greater seemed to produce instability in 
-                                            the system.
+                                            continued to run the robot until I had eliminated oscillations.
                                         </p>
+                                        <p>In particular, I first got a decent output with a GyroZ setpoint of 200, a Kp of 1, and Ki=0. However, I ran into the 
+                                            steady state error problem with just using Kp, so I then found a good set of parameters at GyroZ = 200, Kp=1.1, and Ki = 0.003.
+                                            I saw that a gyroscope output of 170 degrees/sec is the lowest I seem to be able to have with both wheels spinning. 
+                                            I tried scaling it down to a target of 150 degrees/sec, but while I could get both wheels to spin when putting in a freshly charged battery,
+                                            it couild not be reproduced reliably and more often than not resulted in only one wheel spinning, as shown below with a lot of 
+                                            undesirable deviations. 
+                                        </p>
+                                        <p>I ended up with a gyroZ value of 170, Kp = 0.935 and Ki = 0.00255.</p>
+                                        <img class="img-fluid d-block mx-auto" src="assets/img/lab6/setpoint150.PNG" alt="" />
+                                        <p>
                                             I also have a motor power range limiter in runPIDLoop() since the motor is a nonlinear actuator with a limited power range, and we 
                                             have to implement integral clamping to avoid an integral wind-up issue. This resulted in me putting clamps on anything below a
-                                            motor power level of 80 or anything above a motor level of 255. I also chose to put my setpoint well into the linear range of my system, at a
-                                            setpoint speed of 130. Additionally, I tuned the Kp constant to be 1.2, though I think there is definitely still a little room for improvement
-                                            in terms of tuning the controller if I had a little more time, just to make it a little bit better. 
+                                            motor power level of 80 or anything above a motor level of 255. 
                                         </p>
+                                        <iframe src="https://youtube.com/embed/9VmmLyX8wdU"
+                                        width="560" height="315" frameborder="0" allowfullscreen></iframe> 
+                                        <p>As shown, the robot can clearly reach lower speeds using PID control as compared to open loop control. I went from an open loop speed
+                                            of 280 dps to a speed of around 170 dps, which is significantly lower. It is about slow enough to produce a rough rotational scan, though 
+                                            I think this scan might not be the most reliable given that this is still around half a full rotation in one second. 
+                                        </p>
+                                        <p><b>5. One Motor Only </b></p>
+                                        <p>I then used PID control on one motor only to see how slow I could make the robot spin. You can achieve much lower
+                                            speeds now since, intuitively, you are only driving one motor as opposed to driving two in opposing directions (leading to more speed). It becomes
+                                            easier to have the robot basically rotate around one of its wheels rather than around its center. 
+                                        </p>
+                                        <p>I found that a speed of 80 dps was the lowest gyroscope set point I could set. To prevent drifting from having the motor be set to 0,
+                                            I set the right motor to a low value of 50 to let the motor aid the other one just enough to allow the robot to spin around a single wheel.  </p>
+                                        <img class="img-fluid d-block mx-auto" src="assets/img/lab6/onewheel80.PNG" alt="" />
+                                        <p> In terms of accuracy, at a speed of 80 dps and a ToF sampling rate of 40 ms, we get that the vehicle can rotate 3.2 degrees in one TOF measurement.
+                                            If you were mapping a 2x2 m^2 box you would get a change from 200 cm to 200cm/cos(3.2) = 200.3 cm, which is very accurate. 
+                                            If you were trying to map a 4x4m^2 box, you would want to set the TOF to long distance mode as opposed to short mode, with a sampling time of around 100 ms.
+                                            This would give you an accuracy of 8 degrees per measurement, meaning the distance will change from 400 cm to 404 cm, which is still faily accurate. There might 
+                                            be a bit of noise or inaccuracies in terms of the turning of the robot, so this may not actually end up this accurate, but plotting the TOF sensor readings
+                                            should lead to a pretty reasonably accurate mapping of a room.   
+                                        </p>
+                                        <p>I didn't have enough time to plot by TOF sensor readings in a polar plot or implement PID control on my robot's forward velocity since this lab
+                                            really took quite a lot of time to complete, but I guess I'll get to work with this in the future labs. 
+                                        </p>
+
+    
 
 
                                         <p><b><font size = "+2"> Lab 6b: Odometry - Virtual Robot </font></b></p> 
