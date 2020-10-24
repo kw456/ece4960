@@ -1658,13 +1658,28 @@
                                     
                                     
                                     <p><b><font size = "+2"> Lab 7a: Grid Localization using Bayes Filter</font></b></p> 
-                                    <p><b>Prelab:</b></p>   
-                                    
-                                    
-
-
-
-
+                                    <p><b>Objective:</b></p>   
+                                    <p>The lab was as a precursor to the next lab where we will be implementing grid localization using Bayes Filter. 
+                                        </p>
+                                    <p>I first ran the pre-planned trajectory with the Trajectory class and saw that the odometry data became very offset as 
+                                        time went on. Additionally, the robot moved pretty slowly but seemed fairly consistent in its trajectory when I ran the program
+                                        multiple times. While accurate now, we need some sort of localization or way of knowing when the odometry data and the ground truth data are offset. 
+                                    </p>
+                                    <p>I wrote some pseudocode/Python code for the functions needed in the Bayes Filter Algorithm.</p>
+                                    <p>I first had the compute_control function that calculated delta_rot1, delta_rot2, and delta_trans based on the 
+                                        (x,y,angle) data from the current and previous poses. My code is shown below:
+                                    </p>
+                                    <img class="img-fluid d-block mx-auto" src="assets/img/lab7/compute_control.PNG" alt="" />
+                                    <p>I then used the Odometry Motion Model to take the odometry control data in terms of rot1, trans, and rot2 as well as data from the current & previous poses
+                                        to find the probability of the current pose given the previous pose and the control data. I used the Gaussian probabilty functions
+                                        for finding those probabilities for each of the three elements in the tuple and multiplied them together to get the probability.
+                                         </p>
+                                    <img class="img-fluid d-block mx-auto" src="assets/img/lab7/odom_motion_model.PNG" alt="" />
+                                    <p>Then I had the prediction step which, for each xt, loops through each possible x_t-1 and uses the odom_motion_model & the 
+                                        belief from the previous update step to calculate the prior belief for this time step.
+                                    </p>
+                                    <!-- Insert Picture-->
+                                    <p></p>
 
                                     <ul class="list-inline">
                                         <li>Date: October 20, 2020</li>
