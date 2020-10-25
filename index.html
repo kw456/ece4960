@@ -1661,29 +1661,591 @@
                                     <p><b>Objective:</b></p>   
                                     <p>The lab was as a precursor to the next lab where we will be implementing grid localization using Bayes Filter. 
                                         </p>
-                                    <p>I first ran the pre-planned trajectory with the Trajectory class and saw that the odometry data became very offset as 
+                                    <p>I downloaded the lab7 distribution code, first running the pre-planned trajectory with the Trajectory class and seing that the odometry data became very offset as 
                                         time went on. Additionally, the robot moved pretty slowly but seemed fairly consistent in its trajectory when I ran the program
-                                        multiple times. While accurate now, we need some sort of localization or way of knowing when the odometry data and the ground truth data are offset. 
+                                        multiple times. While accurate now, we need some sort of localization or way of knowing where it is when the odometry data is offset, which is where
+                                        the Bayes filter comes in. 
                                     </p>
                                     <p>I wrote some pseudocode/Python code for the functions needed in the Bayes Filter Algorithm.</p>
-                                    <p>I first had the compute_control function that calculated delta_rot1, delta_rot2, and delta_trans based on the 
-                                        (x,y,angle) data from the current and previous poses. My code is shown below:
-                                    </p>
-                                    <img class="img-fluid d-block mx-auto" src="assets/img/lab7/compute_control.PNG" alt="" />
-                                    <p>I then used the Odometry Motion Model to take the odometry control data in terms of rot1, trans, and rot2 as well as data from the current & previous poses
-                                        to find the probability of the current pose given the previous pose and the control data. I used the Gaussian probabilty functions
-                                        for finding those probabilities for each of the three elements in the tuple and multiplied them together to get the probability.
-                                         </p>
-                                    <img class="img-fluid d-block mx-auto" src="assets/img/lab7/odom_motion_model.PNG" alt="" />
-                                    <p>Then I had the prediction step which, for each xt, loops through each possible x_t-1 and uses the odom_motion_model & the 
-                                        belief from the previous update step to calculate the prior belief for this time step.
-                                    </p>
-                                    <!-- Insert Picture-->
+                                   <pre><code>
+                                        # In world coordinates
+                                        def compute_control(cur_pose, prev_pose):
+                                            """ Given the current and previous odometry poses, this function extracts
+                                            the control information based on the odometry motion model.
+                                            Args:
+                                                cur_pose  ([Pose]): Current Pose
+                                                prev_pose ([Pose]): Previous Pose 
+                                        
+                                            Returns:
+                                                [delta_rot_1]: Rotation 1  (degrees)
+                                                [delta_trans]: Translation (meters)
+                                                [delta_rot_2]: Rotation 2  (degrees)
+                                            """
+                                            x_delta = cur_pose[0] - prev_pose[0]    # x of current pose - x of previous pose
+                                            y_delta = cur_pose[1] - prev_pose[1]    # y of current pose - y of previous pose
+
+                                            delta_rot_1 = math.atan2(y_delta, x_delta)    # initial rotation
+                                            if delta_rot_1 > 180:
+                                                delta_rot_1 = delta_rot_1 - 360
+                                            if delta_rot_1 < 180:
+                                                delta_rot_1 = delta_rot_1 + 360
+
+                                            delta_trans = math.sqrt(x_delta**2 + y_delta**2)        # translation
+                                         
+                                            delta_rot_2 = cur_pose[2] - prev_pose[2] - delta_rot_1  # final rotation
+                                            if delta_rot_2 > 180:
+                                                delta_rot_2 = delta_rot_2 - 360
+                                            if delta_rot_2 < 180:
+                                                delta_rot_2 = delta_rot_2 + 360
+
+                                            return delta_rot_1, delta_trans, delta_rot_2        
+                                        
+                                        # In world coordinates
+                                        def odom_motion_model(cur_pose, prev_pose, u):
+                                            """ Odometry Motion Model
+                                            Args:
+                                                cur_pose  ([Pose]): Current Pose
+                                                prev_pose ([Pose]): Previous Pose
+                                                (rot1, trans, rot2) (float, float, float): A tuple with control data in the format 
+                                                                                           format (rot1, trans, rot2) with units (degrees, meters, degrees)
+                                            Returns:
+                                                prob [float]: Probability p(x'|x, u)
+                                            """
+                                            (rot1, trans, rot2) = u
+                                            (pose_rot1, pose_trans, pose_rot2) = compute_control(cur_pose, prev_pose)
+                                            
+                                            p1 = loc.gaussian(math.abs(rot1-pose_rot1), 0, loc.odom_rot_sigma)    # rotation 1
+                                            p2 = loc.gaussian(math.abs(tran1-pose_trans), 0, loc.odom_trans_sigma)  # trans
+                                            p3 = loc.gaussian(math.abs(rot2-pose_rot2), 0, loc.odom_rot_sigma)    # rotation 2
+                                            
+                                            prob = p1 * p2 * p3
+                                                
+                                            return prob
+                                        
+                                        def prediction_step(cur_odom, prev_odom, xt):
+                                            """ Prediction step of the Bayes Filter.
+                                            Update the probabilities in loc.bel_bar based on loc.bel from the previous time step and the odometry motion model.
+                                        
+                                            Args:
+                                                cur_odom  ([Pose]): Current Pose
+                                                prev_odom ([Pose]): Previous Pose
+                                            """
+                                            u = compute_control(cur_odom, prev_odom)        # find control ut
+                                            (x,y,a) = xt                                    # passing in current position as parameter
+                                            loc.bel_bar[x][y][a] = (0,0,0)                  # sum = 0 at first
+                                            for x1 in numpy.arange(-2,2.2,0.2):             # all possible past positions
+                                                for y1 in numpy.range(-2,2.2,0.2):
+                                                    for a1 in numpy.arange(-180,200,20):
+                                                        prev_pose_param = (x1,y1,a1)
+                                                        loc.bel_bar[x][y][a] += odom_motion_model(xt, prev_pose_paran, u) * loc.bel[x1][y1][a1]   # add to sum for the xt 
+                                            loc.bel_bar = sum # prediction
+                                                
+                                        def sensor_model(obs, xt):
+                                            """ This is the equivalent of p(z|x).
+                                        
+                                            Args:
+                                                obs ([ndarray]): A 1D array consisting of the measurements made in rotation loop
+                                        
+                                            Returns:
+                                                [ndarray]: Returns a 1D array of size 18 (=loc.OBS_PER_CELL) with the likelihood of each individual measurements
+                                            """
+                                            prob_array = [0] * 18
+                                            views = get_views(xt[0], xt[1], xt[2])      # true view
+                                            for k in range (0,18):
+                                                prob_array[index] = loc.gaussian(abs(obs[index] - views[index]), 0, loc.sensor_sigma)
+                                            return prob_array
+                                        
+                                        def update_step(z, xt):
+                                            """ Update step of the Bayes Filter.
+                                            Update the probabilities in loc.bel based on loc.bel_bar and the sensor model.
+                                            """
+                                            # update for state xt with measurement z
+                                            (x,y,a) = xt                 
+                                            loc.bel[x][y][a] = sensor_model(z, xt) * loc.bel_bar[x][y][a] * norm_constant       
+                                            # assuming norm_constant is calculated in the loop and multiplied by all loc.bel values
+                                   </code></pre>
                                     <p></p>
 
+
+
                                     <p><b><font size = "+2"> Lab 7b: Mapping</font></b></p> 
-                                    <p><b>Objective:</b></p>   
-                                    <p>The purpose </p>
+                                    <p>I first prepared an area to be mapped out, which ended up being near my front door, putting down tape so I would recognize where
+                                        my boundaries and obstacles were so I can recreate the setup whenever I need to. With this area, I could stand on my stairs at home and get a good top-down view of the map. To make it 
+                                        interesting, I added a couple of boxes as an obstacle in the middle and had a curve in the map from the beginning of the stairs, as well 
+                                        as making the course not symmetrical. 
+                                    </p>
+                                    
+                                    <img class="img-fluid d-block mx-auto" src="assets/img/lab7/IMG_0611-checkpoint.JPG" alt="" />
+                                    <p>I then modified my PID code from the last lab in order to collect data from the robot when it's rotating in place at three points in the map
+                                        (since there's a couple of blind spots if you only do one spot). There was a slight offset when I tried rotating twice so I had to tune my PID controller
+                                    a little bit more, adding in the derivative term. After that, I think my controller had more accuracy. </p>
+                                    <p>Additionally, another thing to note is that
+                                            I switched my turning from clockwise to counterclockwise (because I had to graph this in polar coordinate form). I also had to switch the range for the 
+                                        TOF sensor to be in long-distance mode as opposed to short-distance mode since it's a bigger space and we're going slower. </p>
+                                    <p>My code is below:</p>
+                                    <pre><code>
+                                            /******************************************************************************
+                                          #include <Arduino.h>
+                                          #include <stdint.h>
+                                          #include "SCMD.h"
+                                          #include "SCMD_config.h" //Contains #defines for common SCMD register names and values
+                                          #include "Wire.h"
+                                          
+                                          #include <ComponentObject.h>
+                                          #include <RangeSensor.h>
+                                          #include <SparkFun_VL53L1X.h>
+                                          #include <vl53l1x_class.h>
+                                          #include <vl53l1_error_codes.h>
+                                          
+                                          #include <Wire.h>
+                                          #include "SparkFun_VL53L1X.h" //Click here to get the library: http://librarymanager/All#SparkFun_VL53L1X
+                                          
+                                          #include "ICM_20948.h" 
+                                          #define WIRE_PORT Wire  // Your desired Wire port.      Used when "USE_SPI" is not defined
+                                          #define AD0_VAL   1  
+                                          ICM_20948_I2C myICM;
+                                          
+                                          //Optional interrupt and shutdown pins.
+                                          #define SHUTDOWN_PIN 2
+                                          #define INTERRUPT_PIN 3
+                                          #define LEDPIN 13
+                                          
+                                          const float _adjustPercent= 1.0630;
+                                          const int _pwrLevel = 255;
+                                          const int _minObjDistance = 400;
+                                          const int _forwardCounterRatio = 6; 
+                                          const int _turnTime = 1;
+                                          const int _coastingTime = 50;
+                                          const int _backwardTime = 50;
+                                          
+                                          SFEVL53L1X distanceSensor;
+                                          //Uncomment the following line to use the optional shutdown and interrupt pins.
+                                          //SFEVL53L1X distanceSensor(Wire, SHUTDOWN_PIN, INTERRUPT_PIN);
+                                          
+                                          SCMD myMotorDriver; //This creates the main object of one motor driver and connected slaves.
+                                          float myGyroZ = 0;
+                                          float myYaw = 0;
+                                          int rotateCount = 0;
+                                          float startingYaw_m = 0;
+                                          
+                                          void setup()
+                                          {
+                                            Wire.begin();
+                                          
+                                            Serial.begin(115200);
+                                            Serial.println("VL53L1X Qwiic Test");
+                                          
+                                            if (distanceSensor.begin() != 0) //Begin returns 0 on a good init
+                                            {
+                                              Serial.println("Sensor failed to begin. Please check wiring. Freezing...");
+                                              while (1)
+                                                ;
+                                            }
+                                            Serial.println("Sensor online!");  
+                                            
+                                            pinMode(LED_BUILTIN, OUTPUT);
+                                          
+                                            Serial.println("Starting sketch.");
+                                          
+                                            //***** Configure the Motor Driver's Settings *****//
+                                            //  .commInter face can be I2C_MODE or SPI_MODE
+                                            myMotorDriver.settings.commInterface = I2C_MODE;
+                                            //myMotorDriver.settings.commInterface = SPI_MODE;
+                                          
+                                            //  set address if I2C configuration selected with the config jumpers
+                                            myMotorDriver.settings.I2CAddress = 0x5D; //config pattern "0101" on board for address 0x5A
+                                          
+                                            //  set chip select if SPI selected with the config jumpers
+                                            myMotorDriver.settings.chipSelectPin = 10;
+                                          
+                                            //*****initialize the driver get wait for idle*****//
+                                            while ( myMotorDriver.begin() != 0xA9 ) //Wait until a valid ID word is returned
+                                            {
+                                              Serial.println( "ID mismatch, trying again" );
+                                              delay(500);
+                                            }
+                                            Serial.println( "ID matches 0xA9" );
+                                          
+                                            //  Check to make sure the driver is done looking for slaves before beginning
+                                            Serial.print("Waiting for enumeration...");
+                                            while ( myMotorDriver.ready() == false );
+                                            Serial.println("Done.");
+                                            Serial.println();
+                                          
+                                            //*****Set application settings and enable driver*****//
+                                          
+                                            while ( myMotorDriver.busy() );
+                                            myMotorDriver.enable();
+                                          
+                                            Serial.println();
+                                          
+                                            distanceSensor.setDistanceModeLong();
+                                            distanceSensor.setTimingBudgetInMs(20);
+                                            distanceSensor.setIntermeasurementPeriod(20);
+                                          
+                                            WIRE_PORT.begin();
+                                            WIRE_PORT.setClock(400000);
+                                          
+                                            bool initialized = false;
+                                            while( !initialized ){
+                                          
+                                              myICM.begin( WIRE_PORT, AD0_VAL );
+                                          
+                                              Serial.print( F("Initialization of the sensor returned: ") );
+                                              Serial.println( myICM.statusString() );
+                                              if( myICM.status != ICM_20948_Stat_Ok ){
+                                                Serial.println( "Trying again..." );
+                                                delay(500);
+                                              }else{
+                                                initialized = true;
+                                              }
+                                            }
+                                          
+                                            ICM_20948_fss_t myFSS;  // This uses a "Full Scale Settings" structure that can contain values for all configurable sensors                         
+                                            myFSS.g = dps1000;       // (ICM_20948_GYRO_CONFIG_1_FS_SEL_e)
+                                                                    // dps250
+                                                                    // dps500
+                                                                    // dps1000
+                                                                    // dps2000
+                                                                    
+                                            myICM.setFullScale( (ICM_20948_Internal_Gyr), myFSS );  
+                                            if( myICM.status != ICM_20948_Stat_Ok){
+                                              Serial.print(F("setFullScale returned: "));
+                                              Serial.println(myICM.statusString());
+                                            }
+                                            
+                                          
+                                          }
+                                          
+                                          void loop()
+                                          {
+                                          //  motorCharacteristics();
+                                          //  motorSteady(170);
+
+                                          //   runPIDLoop(200, 0.5, 0.002, 0.1); // good value for GyroZ 200, now let's scale it down
+                                            runPIDLoop(170, 0.425, 0.0017, 0.085);  // from scale down (0.85) of GyroZ 200  
+                                          //  runPIDLoop(150, 0.375, 0.0015, 0.075);  // from scale down (0.75) of GyroZ 200
+                                          //  runPIDLoop(130, 0.325, 0.0013, 0.065);  // from scale down (0.65) of GyroZ 20
+                                          }
+                                          
+                                          
+                                          void runPIDLoop(int setpoint, float KP, float KI, float KD){
+                                            static long startTime = millis();
+                                            static float prevFeedback = 0 ;
+                                            static float prevPIDOutput = 0 ;
+                                            static bool IntegralClamp = false;
+                                          
+                                          
+                                            if( myICM.dataReady() ){
+                                              if ( startingYaw_m == 0 ){
+                                                myICM.getAGMT();
+                                                float yaw_m =  atan2(myICM.magY(), myICM.magX())*180/M_PI;
+                                                if (yaw_m < 0.0 ) yaw_m = 360 + yaw_m;
+                                                startingYaw_m = yaw_m;
+                                          //      Serial.println(startingYaw_m);
+                                              }
+                                          //  if ( millis()-startTime < 10000 ){
+                                              if ( rotateCount < 1 ){ 
+                                                 float pidOutput=computePID(setpoint, KP, KI, KD, prevFeedback, IntegralClamp);
+                                                 float motorStep = prevPIDOutput + pidOutput;
+                                                 if (motorStep > 255) {
+                                                    motorStep = 255;
+                                                    IntegralClamp = true;
+                                                 } else if (motorStep < 80) {
+                                                    motorStep = 80;      
+                                                    IntegralClamp = true;
+                                                 } else {
+                                                    IntegralClamp = false;
+                                                 }
+                                          //       turnClockwise(motorStep);
+                                                 turnCounterClockwise(motorStep);
+                                                 myICM.getAGMT();
+                                                 printData(motorStep);
+                                                 
+                                                 prevFeedback = myGyroZ ; 
+                                                 prevPIDOutput = pidOutput;
+                                              } else {
+                                                digitalWrite( LED_BUILTIN, LOW );
+                                                motorStop();
+                                              }
+                                            }
+                                          }
+                                          
+                                          float computePID(int setPoint, float KP, float KI, float KD, float input, bool IntegralClamp){
+                                            static long prevTime = millis();
+                                            static float prevError =0;
+                                            static float cumError = 0;
+                                            static float rateError =0 ;
+                                            static float lastError = 0;
+                                          
+                                            long currentTime =  millis();
+                                            long elaspedTime = currentTime - prevTime;
+                                            float error = setPoint - abs(input);
+                                            cumError += error * elaspedTime;
+                                          //  Serial.print("input");  
+                                          //  Serial.print(input);        
+                                          //  Serial.print(", ");
+                                            rateError = (error - lastError) / elaspedTime;
+                                          
+                                            float out = KP * error + KD * rateError;
+                                            if (!IntegralClamp ){
+                                              out += KI * cumError;
+                                            }
+                                          
+                                          //  if ((error > 0 && out <0 ) || (error < 0 && out  > 0 )) {
+                                          //    out = 0;
+                                          //  }
+                                          
+                                          //  float out = KP * error + KI * cumError + KD * rateError;
+                                            lastError = error;
+                                            prevTime = currentTime;
+                                            return out;
+                                            
+                                          }
+                                          
+                                          
+                                          void motorSteady(int motorLevel){
+                                            static long startTime = millis();
+                                          
+                                            if ( millis()-startTime < 10000 ){
+                                              turnClockwise(motorLevel);
+                                              printData(motorLevel); 
+                                            } else {
+                                              digitalWrite( LED_BUILTIN, LOW );
+                                              motorStop();
+                                            }
+                                          }
+                                          
+                                          
+                                          void motorCharacteristics(){
+                                            static int motorLevel =  0;
+                                            static int increment = 1;
+                                            static long startTime = millis();
+                                          
+                                            if ( millis()-startTime < 24000 ){
+                                              turnClockwise(motorLevel);
+                                              printData(motorLevel); 
+                                              if (motorLevel == 255) increment = -1;
+                                              motorLevel += increment;    
+                                              if (motorLevel == 0 ) increment = 0;
+                                              delay(10); 
+                                            } else {
+                                              digitalWrite( LED_BUILTIN, LOW );
+                                              motorStop();
+                                            }
+                                          }
+                                          
+                                          void turnClockwise(int motorLevel){
+                                              digitalWrite( LED_BUILTIN, HIGH );
+                                              myMotorDriver.setDrive( 0, 1, motorLevel); 
+                                              myMotorDriver.setDrive( 1, 0, motorLevel);       
+                                              delay(5); 
+                                          }
+                                          
+                                          
+                                          void turnCounterClockwise(int motorLevel){
+                                              digitalWrite( LED_BUILTIN, HIGH );
+                                              myMotorDriver.setDrive( 0, 0, motorLevel); 
+                                              myMotorDriver.setDrive( 1, 1, motorLevel);       
+                                              delay(5); 
+                                          }
+                                          
+                                          void printData(int motorLevel){
+                                            static long last_time = 0;
+                                            static float prevYaw_m = 0;
+                                          
+                                          
+                                              float dist = getDistance();
+                                              //Gyroscope
+                                              Serial.print(motorLevel);        
+                                              Serial.print(", ");
+                                              myGyroZ = myICM.gyrZ();    
+                                              Serial.print(myGyroZ);  
+                                              //yaw angle using gyroscope
+                                              float dt = (millis()-last_time)/1000.;
+                                              last_time = millis();    
+                                              myYaw += + myGyroZ*dt;
+                                              if (abs(myYaw) > 360) {
+                                                myYaw = 0;
+                                                rotateCount++;
+                                              }
+                                              Serial.print(", ");
+                                              Serial.print(myYaw);    
+                                          
+                                              //magnetnometer
+                                              float yaw_m =  atan2(myICM.magY(), myICM.magX())*180/M_PI;
+                                              yaw_m += 180;
+                                          //    if (yaw_m < 0.0 ) {
+                                          //      yaw_m = 360 + yaw_m;
+                                          //    }
+                                          //    if ( yaw_m < startingYaw_m && prevYaw_m > startingYaw_m ){
+                                          //      rotateCount++;
+                                          //    }
+                                          
+                                              Serial.print(", ");
+                                              Serial.print(yaw_m); 
+                                          //    Serial.print(", ");
+                                          //    Serial.print(prevYaw_m); 
+                                          //    Serial.print(", ");
+                                          //    Serial.print(startingYaw_m); 
+                                              Serial.print(", ");
+                                              Serial.print(dist);
+                                              Serial.println();
+                                              prevYaw_m = yaw_m;
+                                          }
+                                          
+                                          
+                                          int getDistance(){
+                                            distanceSensor.startRanging(); //Write configuration bytes to initiate measurement
+                                            while (!distanceSensor.checkForDataReady())
+                                            {
+                                              delay(1);
+                                            }
+                                            int distance = distanceSensor.getDistance(); //Get the result of the measurement from the sensor
+                                            distanceSensor.clearInterrupt();
+                                            distanceSensor.stopRanging();
+                                            return distance;
+                                          }
+                                          
+                                          void motorForward(){
+                                            myMotorDriver.setDrive( 0, 1, _pwrLevel); //Drive motor i forward at full speed
+                                            myMotorDriver.setDrive( 1, 1, _pwrLevel*_adjustPercent);    
+                                            delay(10);
+                                          }
+                                          
+                                          void motorCoasting(int time){
+                                            myMotorDriver.setDrive( 0, 0, 0); 
+                                            myMotorDriver.setDrive( 1, 0, 0);    
+                                            delay(time);
+                                          }
+                                          
+                                          void motorBackward(int time){
+                                            myMotorDriver.setDrive( 0, 0, _pwrLevel); 
+                                            myMotorDriver.setDrive( 1, 0, _pwrLevel*_adjustPercent);    
+                                            delay(time);
+                                          }
+                                          
+                                          void motorPivotRight(int time){
+                                            myMotorDriver.setDrive( 0, 1, _pwrLevel*0.7); //Drive motor i forward at full speed
+                                            myMotorDriver.setDrive( 1, 0, _pwrLevel*_adjustPercent*0.7);    
+                                            delay(time);
+                                          }
+                                          
+                                          void motorPivotLeft(int time){
+                                            myMotorDriver.setDrive( 0, 0, _pwrLevel*0.7); //Drive motor i forward at full speed
+                                            myMotorDriver.setDrive( 1, 1, _pwrLevel*_adjustPercent*0.7);    
+                                            delay(time);
+                                          }
+                                          
+                                          
+                                          void motorStop(){
+                                            myMotorDriver.setDrive( 0, 1, 0);
+                                            myMotorDriver.setDrive( 1, 1, 0);
+                                            delay(10);
+                                          }
+                                    </code></pre>
+                                    <p>In terms of my transformation matrices, I first based some values off of where I put the sensors on the car.
+                                        I put the IMU about 6 cm above the car (to avoid interference from the magnetics of the motors) and also at the center of the car, facing straightforwards (angle = 0 degrees). 
+                                        Additionally, my time
+                                        of flight sensor is mounted 4 cm from the center (origin) of the car, at the cardboard bumper on the front at an angle of 0 degrees.
+                                         I converted the measurements from the distance sensor to the inertial
+                                        reference frame of the room later on in the lab, knowing dx, dy, and dz from my manual measurements. I plugged in roll 
+                                        and pitch to be 0, while I knew yaw from the gyroscope</p>
+                                        <img class="img-fluid d-block mx-auto" src="assets/img/lab7/transformation.PNG" alt="" />
+                                    <p> When collecting measurements, I manually placed the robot in 3 known poses to the origin of my map (which I 
+                                        defined as one of the corners of my map. I think these three poses were sufficient to map out the entire area thoroughly. 
+                                        Additionally, I started the robot in the same orientation for all my scans in order to make it easier on myself when combining
+                                        map data from all three points. 
+                                    </p>
+                                    <iframe src="  https://youtube.com/embed/b3EvZn8Gsnk"
+                                    width="560" height="315" frameborder="0" allowfullscreen></iframe> 
+                                    <p>I had a polar coordinate plot for each of my poses, and also repeated the first scan in the same position twice,
+                                        which led me to conclude that the TOF sensor along with the PID controller can lead to pretty reliable and consistent data. My three scans are
+                                        shown below, with the first one showing that the scan is very repeatable. 
+                                    </p>
+                                    <p>Position 1:</p>
+                                    <img class="img-fluid d-block mx-auto" src="assets/img/lab7/pose1.PNG" alt="" />
+                                    
+                                    <p>Position 2:</p>
+                                    <img class="img-fluid d-block mx-auto" src="assets/img/lab7/pose2.PNG" alt="" />
+                                    
+                                    <p>Position 3:</p>
+                                    <img class="img-fluid d-block mx-auto" src="assets/img/lab7/pose3.PNG" alt="" />
+                                    <p>My code for getting these polar coordinate plots basically consisted of using the yaw angle and converting that to radians, as well as applying 
+                                        my offsets to the poses so I knew where they were relative to the origin of my map. I was then able to plot these tables of points as 
+                                    points in a polar coordinate system, leading to the images above.  </p>
+                                    <img class="img-fluid d-block mx-auto" src="assets/img/lab7/polarcode.PNG" alt="" />
+                                    <p>I measured the offsets from my defined origin for each of my pose positions and inserted them into my calculations 
+                                        for a complete graph of the area to get a scatter plot of my room. 
+                                    </p>
+                                    <img class="img-fluid d-block mx-auto" src="assets/img/lab7/scatter.PNG" alt="" />
+                                    <p>The blue is from my first measurement, the green is from my second, and the red is from my last pose. As seen, this is very similar to 
+                                        the actual map, shown below:
+                                    </p>
+                                    <img class="img-fluid d-block mx-auto" src="assets/img/lab7/room_map.PNG" alt="" />
+                                    <p>I was then able to convert my data into a format that I could use in the simulator. I did this by guessing where the actual walls/obstacles were based on my
+                                        scatter plot and then drawing lines on top of those, saving two lists of the endpoints of these lines as shown below.
+                                    </p>
+                                    <p>Here is my scatter plot with lines on top to estimate walls/obstacles</p>
+                                    <img class="img-fluid d-block mx-auto" src="assets/img/lab7/drawlines.PNG" alt="" />
+                                    <p>Here is the code of my start points and end points:</p>
+                                    <pre><code>
+                                    start_points = np.array([[0.37, 0.49],
+                                    [0.95, 0.49],
+                                    [0.95, 0],
+                                    [2.75, 0],
+                                    [2.75, 0.3],
+                                    [3.2, 0.3],
+                                    [3.2, 2.02],
+                                    [1.82, 2.02],
+                                    [1.82, 2.22],
+                                    [2.13, 2.22],
+                                    [2.13, 3.60],
+                                    [1.00, 3.60],
+                                    [0.05, 3.38],
+                                    [0.05, 2.43],
+                                    [0.43, 2.00],
+                                    [0.43, 1.65],
+                                    [0.37, 1.65],
+                                    [1.05, 1.55],
+                                    [1.32, 1.55],
+                                    [1.32, 2.06],
+                                    [1.05, 2.06]
+                                    ])
+
+                                    end_points = np.array([[0.95, 0.49],
+                                    [0.95, 0],
+                                    [2.75, 0],
+                                    [2.75, 0.3],
+                                    [3.2, 0.3],
+                                    [3.2, 2.02],
+                                    [1.82, 2.02],
+                                    [1.82, 2.22],
+                                    [2.13, 2.22],
+                                    [2.13, 3.58],
+                                    [1.00, 3.60],
+                                    [0.05, 3.38],
+                                    [0.05, 2.43],
+                                    [0.43, 2.00],
+                                    [0.43, 1.65],
+                                    [0.37, 1.65],
+                                    [0.37, 0.49],
+                                    [1.32, 1.55],
+                                    [1.32, 2.06],
+                                    [1.05, 2.06],
+                                    [1.05, 1.55]
+                                    ])
+                                    </code></pre>
+                                    <p>Opening up lab7b.ipynb, I could then visualize my data in the plotter:</p>
+                                    <img class="img-fluid d-block mx-auto" src="assets/img/lab7/lab7b_map.PNG" alt="" />
+                                    <p>In terms of how to pair down readings when I have more than the 18 readings that the simulator expects, I would probably use averaging by dividing
+                                        my total samples by 18 and averaging those values together. I would 
+                                        also weight the middle data value for each group more. For example, if I had 90 readings (leading to 5 measurements to average together for each of the 18 readings), I would weight
+                                        the middle value more, since this should be the value at the center of that angle range. I think averaging helps you with any inaccuracies in 
+                                        terms of the exact angular position by incorporating neighboring values, though weighting the middle should give more significance to the value 
+                                        that should be the closest to the actual physical value. 
+                                    </p>
+                                    <p></p>
                                     <ul class="list-inline">
                                         <li>Date: October 20, 2020</li>
                                     </ul>
