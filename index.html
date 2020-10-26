@@ -1684,7 +1684,7 @@
                                             x_delta = cur_pose[0] - prev_pose[0]    # x of current pose - x of previous pose
                                             y_delta = cur_pose[1] - prev_pose[1]    # y of current pose - y of previous pose
 
-                                            delta_rot_1 = math.atan2(y_delta, x_delta)    # initial rotation
+                                            delta_rot_1 = math.atan2(y_delta, x_delta) - prev_pose[2]    # initial rotation
                                             if delta_rot_1 > 180:
                                                 delta_rot_1 = delta_rot_1 - 360
                                             if delta_rot_1 < 180:
