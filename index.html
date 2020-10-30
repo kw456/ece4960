@@ -1722,7 +1722,7 @@
                                                 
                                             return prob
                                         
-                                        def prediction_step(cur_odom, prev_odom, xt):
+                                        def prediction_step(cur_odom, prev_odom, xt, u):
                                             """ Prediction step of the Bayes Filter.
                                             Update the probabilities in loc.bel_bar based on loc.bel from the previous time step and the odometry motion model.
                                         
