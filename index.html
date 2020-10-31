@@ -158,7 +158,7 @@
                             </a>
                             <div class="portfolio-caption">
                                 <div class="portfolio-caption-heading">Lab 8</div>
-                                <div class="portfolio-caption-subheading text-muted">Mapping</div>
+                                <div class="portfolio-caption-subheading text-muted">Grid Localization using Bayes Filter</div>
                             </div>
                         </div>
                     </div>
@@ -2153,7 +2153,8 @@
                                     <p> When collecting measurements, I manually placed the robot in 3 known poses to the origin of my map (which I 
                                         defined as one of the corners of my map. I think these three poses were sufficient to map out the entire area thoroughly. 
                                         Additionally, I started the robot in the same orientation for all my scans in order to make it easier on myself when combining
-                                        map data from all three points. 
+                                        map data from all three points. Also, a helpful thing to have is very long flexible micro-USB cable so that you don't have to keep plugging it in/out of the robot 
+                                        when you keep updating your Arduino IDE code and are instead able to just keep 
                                     </p>
                                     <iframe src="  https://youtube.com/embed/b3EvZn8Gsnk"
                                     width="560" height="315" frameborder="0" allowfullscreen></iframe> 
@@ -2187,7 +2188,54 @@
                                     <p>Here is my scatter plot with lines on top to estimate walls/obstacles</p>
                                     <img class="img-fluid d-block mx-auto" src="assets/img/lab7/drawlines.PNG" alt="" />
                                     <p>I wrote the code for my start points like:</p>
-                                    <p>start_points = np.array([[0.37, 0.49], [0.95, 0.49], [0.95, 0],........</p>
+                                    <Pre><code>
+                                            start_points = np.array([[-1.63, -1.51],
+                                            [-1.05, -1.51],
+                                            [-1.05, -2],
+                                            [0.75, -2],
+                                            [0.75, -1.7],
+                                            [1.2, -1.7],
+                                            [1.2, 0.02],
+                                            [-0.18, 0.02],
+                                            [-0.18, 0.22],
+                                            [0.13, 0.22],
+                                            [0.13, 1.60],
+                                            [-1.00, 1.60],
+                                            [-1.95, 1.38],
+                                            [-1.95, 0.43],
+                                            [-1.57, 0.00],
+                                            [-1.57, -0.35],
+                                            [-1.63, -0.35],
+                                            [-0.95, -0.35],
+                                            [-0.68, -0.35],
+                                            [-0.68, -0.35],
+                                            [-0.95, -0.35]
+                                           ])
+                   
+                   
+                                          end_points = np.array([[-1.05, -1.51],
+                                          [-1.05, -2],
+                                          [0.75, -2],
+                                          [0.75, -1.7],
+                                          [1.2, -1.7],
+                                          [1.2, 0.02],
+                                          [-0.18, 0.02],
+                                          [-0.18, 0.22],
+                                          [0.13, 0.22],
+                                          [0.13, 1.58],
+                                          [-1.00, 1.60],
+                                          [-1.95, 1.38],
+                                          [-1.95, 0.43],
+                                          [-1.57, 0.00],
+                                          [-1.57, -0.35],
+                                          [-1.57, -0.35],
+                                          [-1.57, -1.51],
+                                          [-0.68, -0.45],
+                                          [-0.68, 0.06],
+                                          [-0.95, 0.06],
+                                          [-0.95, -0.45]
+                                         ])
+                                    </code></Pre>
                                            
                                     <p>Opening up lab7b.ipynb, I could then visualize my data in the plotter:</p>
                                     <img class="img-fluid d-block mx-auto" src="assets/img/lab7/lab7b_map.PNG" alt="" />
@@ -2225,12 +2273,802 @@
                                 <div class="modal-body">
                                     <!-- Project Details Go Here-->
                                     <h2 class="text-uppercase">Lab 8</h2>
-                                    <p class="item-intro text-muted">Mapping</p>
-                                    <img class="img-fluid d-block mx-auto" src="https://previews.123rf.com/images/freaktor/freaktor1908/freaktor190800342/132521020-gps-icon-vector-design-map-pointer-icon-pin-location-symbol-flat-design-style-navigation-icons-for-w.jpg" alt="" />
-                                    <p>Description of lab</p>
+                                    <p class="item-intro text-muted">Grid Localization Using Bayes Filter</p>
+                                    <!--
+                                    <p>The objective of the lab was to implement grid localization using the Bayes filter method.</p>
+                                    <p>I downloaded the lab8 base code and followed the setup instructions like the previous labs. I also
+                                        used the lab8-manager to start the simulator ("a" and "s") and the plotter ("b" and "s"), and I 
+                                        also started the Jupyter server in my VM from the work directory. 
+                                    </p>
+                                    <p>In terms of my implementation, before I attempted to cut down on computation time, I realized that 
+                                        the many iterations of the bayes filter took a very very long time and a lot of patience (though I did do quite a few psets and  
+                                        discover a lot of good music while waiting for my code to finish running). Because of this,
+                                        I knew that I needed to write efficient code so I implemented some of the tips stated in the lab, which I'll get into below.
+                                    </p>
+                                    <p>My Bayes filter functions relating to the prediction step are shown below. I kept most of my functions the same as Lab 6, though I fixed a few mistakes I made before. In the compute_control function, I computed the 
+                                        rot1, trans, and rot2 info needed for the odometry model from the current pose and previous pose. I also normalized the angles to be between -180 and 180 degrees. My odometry model
+                                    then utilized this function by returning the probability of the current pose given the previous pose and control data. I found this by using the Gaussian function with the rotation
+                                and translation sigmas given. I was then able to use these in the prediction step to find the prior belief, only computing the values if the probabiility of a state was greater than 0.0001 (to cut down 
+                            on computation time). Because fo this, I also had to normalize my probabilities at the end of the loop to account for the skipped steps, using numpy to calculate the sum of all my loc.bel_bar values in the function.
+                            In particular, this step was done with <code>loc.bel_bar = loc.bel_bar / np.sum(loc.bel_bar)</code></p>
+                                    <pre><code>
+                                            from tqdm import tqdm
+
+                                            # In the docstring, "Pose" refers to a tuple (x,y,yaw) in (meters, meters, degrees)
+                                            # In world coordinates
+                                            def compute_control(cur_pose, prev_pose):
+                                                """ Given the current and previous odometry poses, this function extracts
+                                                the control information based on the odometry motion model.
+                                                Args:
+                                                    cur_pose  ([Pose]): Current Pose
+                                                    prev_pose ([Pose]): Previous Pose 
+                                            
+                                                Returns:
+                                                    [delta_rot_1]: Rotation 1  (degrees)
+                                                    [delta_trans]: Translation (meters)
+                                                    [delta_rot_2]: Rotation 2  (degrees)
+                                                """
+                                                x_delta = cur_pose[0] - prev_pose[0]    # x of current pose - x of previous pose
+                                                y_delta = cur_pose[1] - prev_pose[1]    # y of current pose - y of previous pose
+                                            
+                                                delta_rot_1 = loc.mapper.normalize_angle(math.atan2(y_delta, x_delta) * 180/np.pi - prev_pose[2])    # initial rotation
+                                            
+                                                delta_trans = math.sqrt(x_delta**2 + y_delta**2)        # translation
+                                            
+                                                delta_rot_2 = loc.mapper.normalize_angle(cur_pose[2] - prev_pose[2] - delta_rot_1)  # final rotation
+                                            
+                                                return delta_rot_1, delta_trans, delta_rot_2        
+                                            
+                                            # In world coordinates
+                                            def odom_motion_model(cur_pose, prev_pose, u):
+                                                """ Odometry Motion Model
+                                                Args:
+                                                    cur_pose  ([Pose]): Current Pose
+                                                    prev_pose ([Pose]): Previous Pose
+                                                    (rot1, trans, rot2) (float, float, float): A tuple with control data in the format 
+                                                                                               format (rot1, trans, rot2) with units (degrees, meters, degrees)
+                                                Returns:
+                                                    prob [float]: Probability p(x'|x, u)
+                                                """
+                                                (uRot1, uTrans, uRot2) = u
+                                                (pRot1, pTrans, pRot2) = compute_control(cur_pose, prev_pose)
+                                            
+                                                p1 = loc.gaussian(uRot1-pRot1, 0, loc.odom_rot_sigma)    # rotation 1
+                                                p2 = loc.gaussian(uTrans-pTrans, 0, loc.odom_trans_sigma)  # trans
+                                                p3 = loc.gaussian(uRot2-pRot2, 0, loc.odom_rot_sigma)    # rotation 2
+                                            
+                                                prob = p1 * p2 * p3
+                                            
+                                                return prob
+                                            
+                                            def prediction_step(cur_odom, prev_odom):
+                                                """ Prediction step of the Bayes Filter.
+                                                Update the probabilities in loc.bel_bar based on loc.bel from the previous time step and the odometry motion model.
+                                            
+                                                Args:
+                                                    cur_odom  ([Pose]): Current Pose
+                                                    prev_odom ([Pose]): Previous Pose
+                                                """
+                                            #     (x,y,a) = loc.mapper.to_map(xt)                 # passing in current position as parameter
+                                            #     loc.bel_bar[x][y][a] = (0,0,0)                  # sum = 0 at first  
+                                                u = compute_control(cur_odom, prev_odom)
+                                                for xc,yc,ac in tqdm(np.ndindex(loc.bel.shape)):   # all possible past positions
+                                                    for xp,yp,ap in np.ndindex(loc.bel.shape):
+                                                        if (loc.bel[xp][yp][ap] > 0.0001 ):
+                                                            loc.bel_bar[xc][yc][ac] += odom_motion_model( loc.mapper.from_map(xc,yc,ac), loc.mapper.from_map(xp,yp,ap), u ) * loc.bel[xp][yp][ap]   # add to sum for the xt 
+                                                loc.bel_bar = loc.bel_bar / np.sum(loc.bel_bar)
+                                            #         print(loc.bel_bar[xc][yc][ac])   
+                                    </code></pre>
+                                    <p>In terms of the update step and the sensor model, I basically kept my code the same as Lab7. For the sensor model, I used the true view (from the function get_views) and also
+                                        the data that the robot obtains by spinning in a circle (and collecting 18 data points). I was then able to compute the probability of z|x using the Gaussian function of the difference
+                                        between the observation data and the true view, given a mean of 0 and a SD of sensor_sigma. The update step involved using the sensor model and the prior belief to find the belief, updating the 
+                                        values in the belief array. I also had to normalize this to ensure that all values in loc.bel summed up to a probability of 1.  
+                                    </p>
+                                    <pre><code>
+                                            def sensor_model(obs, xt):
+                                                """ This is the equivalent of p(z|x).
+                                            
+                                                Args:
+                                                    obs ([ndarray]): A 1D array consisting of the measurements made in rotation loop
+                                            
+                                                Returns:
+                                                    [ndarray]: Returns a 1D array of size 18 (=loc.OBS_PER_CELL) with the likelihood of each individual measurements
+                                                """
+                                                (cx,cy,ca) = xt
+                                                views = loc.mapper.get_views(cx,cy,ca)      # true view
+                                                return loc.gaussian(obs - views, 0, loc.sensor_sigma)[ca]
+                                            
+                                            def update_step():
+                                                """ Update step of the Bayes Filter.
+                                                Update the probabilities in loc.bel based on loc.bel_bar and the sensor model.
+                                                """
+                                                # update for state xt with measurement z
+                                                for x0,y0,a0 in np.ndindex(loc.bel.shape): 
+                                                    loc.bel[x0][y0][a0] = sensor_model(loc.obs_range_data, (x0,y0,a0)) * loc.bel_bar[x0][y0][a0]                                                                                                
+                                                loc.bel = loc.bel / np.sum(loc.bel)
+                                    </code></pre>
+                                    <p>I could also then run the Bayes Filter by putting all those functions together: </p>
+                                    <pre><code>
+                                            # Reset Plots
+                                            robot.reset()
+                                            loc = BaseLocalization(robot, mapper)
+                                            loc.plotter.reset_plot()
+                                            
+                                            # Intialize the Trajectory object
+                                            traj = Trajectory(loc)
+                                            
+                                            # Run through each motion steps
+                                            for t in range(0, traj.total_time_steps):
+                                            # for t in range(0, 4):
+                                                
+                                                print("\n\n-----------------", t, "-----------------")
+                                                
+                                                prev_odom, current_odom, prev_gt, current_gt = traj.execute_time_step(t)
+                                                
+                                                # Prediction Step
+                                                prediction_step(current_odom, prev_odom)
+                                                loc.print_prediction_stats(plot_data=True)
+                                                
+                                                # Get Observation Data by executing a 360 degree rotation motion
+                                                loc.get_observation_data()
+                                                
+                                                # Update Step
+                                                update_step()
+                                                loc.print_update_stats(plot_data=True)
+                                                    
+                                                print("-------------------------------------")
+                                    </code></pre>
+                                    <p>As shown above, you first had to reset the plots and setup the localization object & the plotter. After initializing the Trajectory object, you had to go through each of the motion steps. I then
+                                        took in the prev_odom, current_odom, prev_gt, and current_gt values that I received after executing the time step. I could use these values to run the prediction step and print the prediction statistics.
+                                        This iterated through all past possible states and calculated the prior beliefs for different positions. After that, I then received the measurement/observation data by executing a 360 degree rotation, collecting
+                                        18 data points. I then ran the update_step function and printed out the update_stats as well. 
+                                    </p>
+                                    <p>Here is a shot of my grid localization code in the plotter after one of my runs. As seen, the odometry data (the blue) becomes extremely offset as more time goes on and was very unreliable.
+                                        However, the ground truth (the green) and the belief position (the yellow) demonstrate the effectiveness of the Bayes filter, with the robot being able to execute clean looking obstacle 
+                                    avoidance, though it might take a couple of minutes to run. </p>
+                                    <img class="img-fluid d-block mx-auto" src="assets/img/lab8/lab8-run.png" alt="" />
+                                    <p>Additionally, I have prediction and update statistics from that run. I included the most probable state after each iteration of the filter, along with its error when 
+                                        compared with the ground truth pose. 
+                                    </p>
+                                    -->
+                                    <pre><code>
+                                            | Resetting Robot pose+
+                                            Initial Pose:  (10, 10, 9)
+                                            Initializing belief with a Point mass Distribution at:  (10, 10, 9)
+                                             
+                                             
+                                            ----------------- 0 -----------------
+                                             | Resetting Robot pose
+                                             
+                                            7200it [01:14, 97.06it/s]
+                                             
+                                             
+                                            ---------- PREDICTION STATS -----------
+                                            GT index            :  (11, 9, 7)
+                                            Prior Bel index     :  (12, 10, 9) with prob =  0.0651982
+                                            POS ERROR      : (-0.111, -0.195, -32.345)
+                                            ---------- PREDICTION STATS -----------
+                                             | Executing Observation Loop at: 30 deg/s
+                                             
+                                            ---------- UPDATE STATS -----------
+                                            GT index      :  (11, 9, 7)
+                                            Bel index     :  (13, 10, 9) with prob =  0.3523702
+                                            Bel_bar prob at index =  0.05933602771081202
+                                             
+                                            GT     : (0.389, -0.095, -22.345)
+                                            Belief   : (0.700, 0.100, 10.000)
+                                            POS ERROR : (-0.311, -0.195, -32.345)
+                                            ---------- UPDATE STATS -----------
+                                            -------------------------------------
+                                             
+                                             
+                                            ----------------- 1 -----------------
+                                             
+                                            7200it [01:21, 88.00it/s]
+                                             
+                                             
+                                            ---------- PREDICTION STATS -----------
+                                            GT index            :  (13, 7, 8)
+                                            Prior Bel index     :  (14, 9, 10) with prob =  0.0663200
+                                            POS ERROR      : (-0.228, -0.345, -35.157)
+                                            ---------- PREDICTION STATS -----------
+                                             | Executing Observation Loop at: 30 deg/s
+                                             
+                                            ---------- UPDATE STATS -----------
+                                            GT index      :  (13, 7, 8)
+                                            Bel index     :  (14, 8, 8) with prob =  0.1605290
+                                            Bel_bar prob at index =  0.016886220010427267
+                                             
+                                            GT     : (0.672, -0.445, -14.157)
+                                            Belief   : (0.900, -0.300, -10.000)
+                                            POS ERROR : (-0.228, -0.145, -4.157)
+                                            ---------- UPDATE STATS -----------
+                                            -------------------------------------
+                                             
+                                             
+                                            ----------------- 2 -----------------
+                                             
+                                            7200it [01:31, 78.45it/s]
+                                             
+                                             
+                                            ---------- PREDICTION STATS -----------
+                                            GT index            :  (14, 7, 8)
+                                            Prior Bel index     :  (15, 8, 8) with prob =  0.0312289
+                                            POS ERROR      : (-0.225, -0.196, 2.031)
+                                            ---------- PREDICTION STATS -----------
+                                             | Executing Observation Loop at: 30 deg/s
+                                             
+                                            ---------- UPDATE STATS -----------
+                                            GT index      :  (14, 7, 8)
+                                            Bel index     :  (17, 8, 8) with prob =  0.1136795
+                                            Bel_bar prob at index =  0.017811352013239305
+                                             
+                                            GT     : (0.875, -0.496, -4.969)
+                                            Belief   : (1.500, -0.300, -10.000)
+                                            POS ERROR : (-0.625, -0.196, 5.031)
+                                            ---------- UPDATE STATS -----------
+                                            -------------------------------------
+                                             
+                                             
+                                            ----------------- 3 -----------------
+                                             
+                                            7200it [01:30, 79.34it/s]
+                                             
+                                             
+                                            ---------- PREDICTION STATS -----------
+                                            GT index            :  (16, 7, 10)
+                                            Prior Bel index     :  (13, 7, 12) with prob =  0.0255258
+                                            POS ERROR      : (0.534, -0.027, -37.153)
+                                            ---------- PREDICTION STATS -----------
+                                             | Executing Observation Loop at: 30 deg/s
+                                             
+                                            ---------- UPDATE STATS -----------
+                                            GT index      :  (16, 7, 10)
+                                            Bel index     :  (13, 7, 11) with prob =  0.0777312
+                                            Bel_bar prob at index =  0.020503866186505605
+                                             
+                                            GT     : (1.234, -0.527, 32.847)
+                                            Belief   : (0.700, -0.500, 50.000)
+                                            POS ERROR : (0.534, -0.027, -17.153)
+                                            ---------- UPDATE STATS -----------
+                                            -------------------------------------
+                                             
+                                             
+                                            ----------------- 4 -----------------
+                                             
+                                            7200it [01:37, 73.70it/s]
+                                             
+                                             
+                                            ---------- PREDICTION STATS -----------
+                                            GT index            :  (17, 8, 13)
+                                            Prior Bel index     :  (16, 8, 13) with prob =  0.0184256
+                                            POS ERROR      : (0.178, -0.052, 3.007)
+                                            ---------- PREDICTION STATS -----------
+                                             | Executing Observation Loop at: 30 deg/s
+                                             
+                                            ---------- UPDATE STATS -----------
+                                            GT index      :  (17, 8, 13)
+                                            Bel index     :  (17, 8, 13) with prob =  0.0861573
+                                            Bel_bar prob at index =  0.017338608024033298
+                                             
+                                            GT     : (1.478, -0.352, 93.007)
+                                            Belief   : (1.500, -0.300, 90.000)
+                                            POS ERROR : (-0.022, -0.052, 3.007)
+                                            ---------- UPDATE STATS -----------
+                                            -------------------------------------
+                                             
+                                             
+                                            ----------------- 5 -----------------
+                                             
+                                            7200it [01:44, 68.70it/s]
+                                             
+                                             
+                                            ---------- PREDICTION STATS -----------
+                                            GT index            :  (17, 10, 13)
+                                            Prior Bel index     :  (16, 12, 13) with prob =  0.0205122
+                                            POS ERROR      : (0.151, -0.353, 3.007)
+                                            ---------- PREDICTION STATS -----------
+                                             | Executing Observation Loop at: 30 deg/s
+                                             
+                                            ---------- UPDATE STATS -----------
+                                            GT index      :  (17, 10, 13)
+                                            Bel index     :  (17, 12, 13) with prob =  0.0733782
+                                            Bel_bar prob at index =  0.01844178736591695
+                                             
+                                            GT     : (1.451, 0.147, 93.007)
+                                            Belief   : (1.500, 0.500, 90.000)
+                                            POS ERROR : (-0.049, -0.353, 3.007)
+                                            ---------- UPDATE STATS -----------
+                                            -------------------------------------
+                                             
+                                             
+                                            ----------------- 6 -----------------
+                                             
+                                            7200it [01:59, 60.23it/s]
+                                             
+                                             
+                                            ---------- PREDICTION STATS -----------
+                                            GT index            :  (17, 12, 14)
+                                            Prior Bel index     :  (17, 14, 14) with prob =  0.0245279
+                                            POS ERROR      : (-0.008, -0.335, -8.399)
+                                            ---------- PREDICTION STATS -----------
+                                             | Executing Observation Loop at: 30 deg/s
+                                             
+                                            ---------- UPDATE STATS -----------
+                                            GT index      :  (17, 12, 14)
+                                            Bel index     :  (17, 14, 14) with prob =  0.0507463
+                                            Bel_bar prob at index =  0.02452792874785961
+                                             
+                                            GT     : (1.492, 0.565, 104.601)
+                                            Belief   : (1.500, 0.900, 110.000)
+                                            POS ERROR : (-0.008, -0.335, -5.399)
+                                            ---------- UPDATE STATS -----------
+                                            -------------------------------------
+                                             
+                                             
+                                            ----------------- 7 -----------------
+                                             
+                                            7200it [01:51, 64.36it/s]
+                                             
+                                             
+                                            ---------- PREDICTION STATS -----------
+                                            GT index            :  (17, 15, 14)
+                                            Prior Bel index     :  (17, 17, 13) with prob =  0.0196410
+                                            POS ERROR      : (0.014, -0.455, 14.601)
+                                            ---------- PREDICTION STATS -----------
+                                             | Executing Observation Loop at: 30 deg/s
+                                             
+                                            ---------- UPDATE STATS -----------
+                                            GT index      :  (17, 15, 14)
+                                            Bel index     :  (17, 17, 13) with prob =  0.0651195
+                                            Bel_bar prob at index =  0.01964102162724574
+                                             
+                                            GT     : (1.514, 1.045, 104.601)
+                                            Belief   : (1.500, 1.500, 90.000)
+                                            POS ERROR : (0.014, -0.455, 14.601)
+                                            ---------- UPDATE STATS -----------
+                                            -------------------------------------
+                                             
+                                             
+                                            ----------------- 8 -----------------
+                                             
+                                            7200it [01:57, 61.40it/s]
+                                             
+                                             
+                                            ---------- PREDICTION STATS -----------
+                                            GT index            :  (17, 15, 17)
+                                            Prior Bel index     :  (18, 17, 17) with prob =  0.0174179
+                                            POS ERROR      : (-0.186, -0.455, -8.103)
+                                            ---------- PREDICTION STATS -----------
+                                             | Executing Observation Loop at: 30 deg/s
+                                             
+                                            ---------- UPDATE STATS -----------
+                                            GT index      :  (17, 15, 17)
+                                            Bel index     :  (18, 16, 17) with prob =  0.1246307
+                                            Bel_bar prob at index =  0.0137743163493941
+                                             
+                                            GT     : (1.514, 1.045, 161.897)
+                                            Belief   : (1.700, 1.300, 170.000)
+                                            POS ERROR : (-0.186, -0.255, -8.103)
+                                            ---------- UPDATE STATS -----------
+                                            -------------------------------------
+                                             
+                                             
+                                            ----------------- 9 -----------------
+                                             
+                                            7200it [02:45, 43.60it/s]
+                                             
+                                             
+                                            ---------- PREDICTION STATS -----------
+                                            GT index            :  (16, 15, 17)
+                                            Prior Bel index     :  (16, 16, 17) with prob =  0.0273954
+                                            POS ERROR      : (-0.071, -0.162, -6.957)
+                                            ---------- PREDICTION STATS -----------
+                                             | Executing Observation Loop at: 30 deg/s
+                                             
+                                            ---------- UPDATE STATS -----------
+                                            GT index      :  (16, 15, 17)
+                                            Bel index     :  (16, 16, 17) with prob =  0.1196307
+                                            Bel_bar prob at index =  0.02739545249758917
+                                             
+                                            GT     : (1.229, 1.138, 163.043)
+                                            Belief   : (1.300, 1.300, 170.000)
+                                            POS ERROR : (-0.071, -0.162, -6.957)
+                                            ---------- UPDATE STATS -----------
+                                            -------------------------------------
+                                             
+                                             
+                                            ----------------- 10 -----------------
+                                             
+                                            7200it [02:12, 54.43it/s]
+                                             
+                                             
+                                            ---------- PREDICTION STATS -----------
+                                            GT index            :  (14, 16, 16)
+                                            Prior Bel index     :  (13, 17, 17) with prob =  0.0242882
+                                            POS ERROR      : (0.213, -0.266, -10.395)
+                                            ---------- PREDICTION STATS -----------
+                                             | Executing Observation Loop at: 30 deg/s
+                                             
+                                            ---------- UPDATE STATS -----------
+                                            GT index      :  (14, 16, 17)
+                                            Bel index     :  (13, 17, 17) with prob =  0.0643476
+                                            Bel_bar prob at index =  0.02428829842195022
+                                             
+                                            GT     : (0.913, 1.234, 162.605)
+                                            Belief   : (0.700, 1.500, 170.000)
+                                            POS ERROR : (0.213, -0.266, -7.395)
+                                            ---------- UPDATE STATS -----------
+                                            -------------------------------------
+                                             
+                                             
+                                            ----------------- 11 -----------------
+                                             
+                                            7200it [01:55, 62.17it/s]
+                                             
+                                             
+                                            ---------- PREDICTION STATS -----------
+                                            GT index            :  (13, 16, 16)
+                                            Prior Bel index     :  (11, 17, 0) with prob =  0.0236159
+                                            POS ERROR      : (0.429, -0.187, 326.876)
+                                            ---------- PREDICTION STATS -----------
+                                             | Executing Observation Loop at: 30 deg/s
+                                             
+                                            ---------- UPDATE STATS -----------
+                                            GT index      :  (13, 16, 16)
+                                            Bel index     :  (11, 17, 0) with prob =  0.1198122
+                                            Bel_bar prob at index =  0.023615940807693036
+                                             
+                                            GT     : (0.729, 1.313, 156.876)
+                                            Belief   : (0.300, 1.500, -170.000)
+                                            POS ERROR : (0.429, -0.187, 326.876)
+                                            ---------- UPDATE STATS -----------
+                                            -------------------------------------
+                                             
+                                             
+                                            ----------------- 12 -----------------
+                                             
+                                            7200it [01:51, 64.85it/s]
+                                             
+                                             
+                                            ---------- PREDICTION STATS -----------
+                                            GT index            :  (11, 17, 16)
+                                            Prior Bel index     :  (9, 17, 0) with prob =  0.0216308
+                                            POS ERROR      : (0.415, -0.011, 326.876)
+                                            ---------- PREDICTION STATS -----------
+                                             | Executing Observation Loop at: 30 deg/s
+                                             
+                                            ---------- UPDATE STATS -----------
+                                            GT index      :  (11, 17, 16)
+                                            Bel index     :  (9, 17, 0) with prob =  0.0779222
+                                            Bel_bar prob at index =  0.02163083509988959
+                                             
+                                            GT     : (0.315, 1.489, 156.876)
+                                            Belief   : (-0.100, 1.500, -170.000)
+                                            POS ERROR : (0.415, -0.011, 326.876)
+                                            ---------- UPDATE STATS -----------
+                                            -------------------------------------
+                                             
+                                             
+                                            ----------------- 13 -----------------
+                                             
+                                            7200it [02:22, 50.50it/s]
+                                             
+                                             
+                                            ---------- PREDICTION STATS -----------
+                                            GT index            :  (11, 17, 17)
+                                            Prior Bel index     :  (6, 17, 0) with prob =  0.0234502
+                                            POS ERROR      : (0.969, 0.009, 332.605)
+                                            ---------- PREDICTION STATS -----------
+                                             | Executing Observation Loop at: 30 deg/s
+                                             
+                                            ---------- UPDATE STATS -----------
+                                            GT index      :  (11, 17, 17)
+                                            Bel index     :  (8, 17, 17) with prob =  0.0859198
+                                            Bel_bar prob at index =  0.01158868942163392
+                                             
+                                            GT     : (0.269, 1.509, 162.605)
+                                            Belief   : (-0.300, 1.500, 170.000)
+                                            POS ERROR : (0.569, 0.009, -7.395)
+                                            ---------- UPDATE STATS -----------
+                                            -------------------------------------
+                                             
+                                             
+                                            ----------------- 14 -----------------
+                                             
+                                            7200it [02:23, 50.15it/s]
+                                             
+                                             
+                                            ---------- PREDICTION STATS -----------
+                                            GT index            :  (9, 18, 17)
+                                            Prior Bel index     :  (6, 17, 0) with prob =  0.0158876
+                                            POS ERROR      : (0.540, 0.144, 332.605)
+                                            ---------- PREDICTION STATS -----------
+                                             | Executing Observation Loop at: 30 deg/s
+                                             
+                                            ---------- UPDATE STATS -----------
+                                            GT index      :  (9, 18, 17)
+                                            Bel index     :  (6, 17, 17) with prob =  0.0470667
+                                            Bel_bar prob at index =  0.013672977444674434
+                                             
+                                            GT     : (-0.160, 1.644, 162.605)
+                                            Belief   : (-0.700, 1.500, 170.000)
+                                            POS ERROR : (0.540, 0.144, -7.395)
+                                            ---------- UPDATE STATS -----------
+                                            -------------------------------------
+                                             
+                                             
+                                            ----------------- 15 -----------------
+                                             
+                                            7200it [02:00, 59.59it/s]
+                                             
+                                             
+                                            ---------- PREDICTION STATS -----------
+                                            GT index            :  (9, 18, 2)
+                                            Prior Bel index     :  (7, 16, 3) with prob =  0.0091267
+                                            POS ERROR      : (0.340, 0.344, -18.640)
+                                            ---------- PREDICTION STATS -----------
+                                             | Executing Observation Loop at: 30 deg/s
+                                             
+                                            ---------- UPDATE STATS -----------
+                                            GT index      :  (9, 18, 2)
+                                            Bel index     :  (4, 17, 4) with prob =  0.1517290
+                                            Bel_bar prob at index =  0.00697028760112601
+                                             
+                                            GT     : (-0.160, 1.644, -125.640)
+                                            Belief   : (-1.100, 1.500, -90.000)
+                                            POS ERROR : (0.940, 0.144, -35.640)
+                                            ---------- UPDATE STATS -----------
+                                            -------------------------------------
+                                             
+                                             
+                                            ----------------- 16 -----------------
+                                             
+                                            7200it [01:56, 61.81it/s]
+                                             
+                                             
+                                            ---------- PREDICTION STATS -----------
+                                            GT index            :  (8, 17, 3)
+                                            Prior Bel index     :  (5, 15, 5) with prob =  0.0201216
+                                            POS ERROR      : (0.658, 0.361, -44.180)
+                                            ---------- PREDICTION STATS -----------
+                                             | Executing Observation Loop at: 30 deg/s
+                                             
+                                            ---------- UPDATE STATS -----------
+                                            GT index      :  (8, 17, 3)
+                                            Bel index     :  (5, 14, 5) with prob =  0.1483167
+                                            Bel_bar prob at index =  0.015260840270979858
+                                             
+                                            GT     : (-0.242, 1.461, -114.180)
+                                            Belief   : (-0.900, 0.900, -70.000)
+                                            POS ERROR : (0.658, 0.561, -44.180)
+                                            ---------- UPDATE STATS -----------
+                                            -------------------------------------
+                                             
+                                             
+                                            ----------------- 17 -----------------
+                                             
+                                            7200it [02:07, 56.55it/s]
+                                             
+                                             
+                                            ---------- PREDICTION STATS -----------
+                                            GT index            :  (8, 16, 3)
+                                            Prior Bel index     :  (5, 13, 4) with prob =  0.0240663
+                                            POS ERROR      : (0.585, 0.575, -21.316)
+                                            ---------- PREDICTION STATS -----------
+                                             | Executing Observation Loop at: 30 deg/s
+                                             
+                                            ---------- UPDATE STATS -----------
+                                            GT index      :  (8, 16, 3)
+                                            Bel index     :  (5, 14, 5) with prob =  0.0949050
+                                            Bel_bar prob at index =  0.012076298388519965
+                                             
+                                            GT     : (-0.315, 1.275, -111.316)
+                                            Belief   : (-0.900, 0.900, -70.000)
+                                            POS ERROR : (0.585, 0.375, -41.316)
+                                            ---------- UPDATE STATS -----------
+                                            -------------------------------------
+                                             
+                                             
+                                            ----------------- 18 -----------------
+                                             
+                                            7200it [02:52, 41.67it/s]
+                                             
+                                             
+                                            ---------- PREDICTION STATS -----------
+                                            GT index            :  (7, 14, 3)
+                                            Prior Bel index     :  (5, 13, 4) with prob =  0.0141111
+                                            POS ERROR      : (0.476, 0.295, -22.462)
+                                            ---------- PREDICTION STATS -----------
+                                             | Executing Observation Loop at: 30 deg/s
+                                             
+                                            ---------- UPDATE STATS -----------
+                                            GT index      :  (7, 14, 3)
+                                            Bel index     :  (5, 13, 4) with prob =  0.1046278
+                                            Bel_bar prob at index =  0.01411113771997731
+                                             
+                                            GT     : (-0.424, 0.995, -109.462)
+                                            Belief   : (-0.900, 0.700, -90.000)
+                                            POS ERROR : (0.476, 0.295, -19.462)
+                                            ---------- UPDATE STATS -----------
+                                            -------------------------------------
+                                             
+                                             
+                                            ----------------- 19 -----------------
+                                             
+                                            7200it [02:50, 42.26it/s]
+                                             
+                                             
+                                            ---------- PREDICTION STATS -----------
+                                            GT index            :  (7, 13, 3)
+                                            Prior Bel index     :  (5, 11, 4) with prob =  0.0167380
+                                            POS ERROR      : (0.376, 0.412, -20.608)
+                                            ---------- PREDICTION STATS -----------
+                                             | Executing Observation Loop at: 30 deg/s
+                                             
+                                            ---------- UPDATE STATS -----------
+                                            GT index      :  (7, 13, 3)
+                                            Bel index     :  (4, 11, 4) with prob =  0.0500824
+                                            Bel_bar prob at index =  0.006732000696157437
+                                             
+                                            GT     : (-0.524, 0.712, -110.608)
+                                            Belief   : (-1.100, 0.300, -90.000)
+                                            POS ERROR : (0.576, 0.412, -20.608)
+                                            ---------- UPDATE STATS -----------
+                                            -------------------------------------
+                                             
+                                             
+                                            ----------------- 20 -----------------
+                                             
+                                            7200it [02:11, 54.84it/s]
+                                             
+                                             
+                                            ---------- PREDICTION STATS -----------
+                                            GT index            :  (7, 13, 3)
+                                            Prior Bel index     :  (6, 9, 4) with prob =  0.0083308
+                                            POS ERROR      : (0.147, 0.717, -11.440)
+                                            ---------- PREDICTION STATS -----------
+                                             | Executing Observation Loop at: 30 deg/s
+                                             
+                                            ---------- UPDATE STATS -----------
+                                            GT index      :  (7, 13, 3)
+                                            Bel index     :  (6, 9, 4) with prob =  0.0420955
+                                            Bel_bar prob at index =  0.008330826405361728
+                                             
+                                            GT     : (-0.553, 0.617, -101.440)
+                                            Belief   : (-0.700, -0.100, -90.000)
+                                            POS ERROR : (0.147, 0.717, -11.440)
+                                            ---------- UPDATE STATS -----------
+                                            -------------------------------------
+                                             
+                                             
+                                            ----------------- 21 -----------------
+                                             
+                                            7200it [02:21, 50.81it/s]
+                                             
+                                             
+                                            ---------- PREDICTION STATS -----------
+                                            GT index            :  (6, 11, 3)
+                                            Prior Bel index     :  (6, 7, 4) with prob =  0.0111224
+                                            POS ERROR      : (0.087, 0.823, -11.440)
+                                            ---------- PREDICTION STATS -----------
+                                             | Executing Observation Loop at: 30 deg/s
+                                             
+                                            ---------- UPDATE STATS -----------
+                                            GT index      :  (6, 11, 3)
+                                            Bel index     :  (5, 7, 4) with prob =  0.0497646
+                                            Bel_bar prob at index =  0.007407036399791877
+                                             
+                                            GT     : (-0.613, 0.323, -104.440)
+                                            Belief   : (-0.900, -0.500, -90.000)
+                                            POS ERROR : (0.287, 0.823, -14.440)
+                                            ---------- UPDATE STATS -----------
+                                            -------------------------------------
+                                             
+                                             
+                                            ----------------- 22 -----------------
+                                             
+                                            7200it [02:21, 50.80it/s]
+                                             
+                                             
+                                            ---------- PREDICTION STATS -----------
+                                            GT index            :  (7, 9, 5)
+                                            Prior Bel index     :  (5, 5, 6) with prob =  0.0128285
+                                            POS ERROR      : (0.307, 0.823, -20.063)
+                                            ---------- PREDICTION STATS -----------
+                                             | Executing Observation Loop at: 30 deg/s
+                                             
+                                            ---------- UPDATE STATS -----------
+                                            GT index      :  (7, 9, 5)
+                                            Bel index     :  (14, 3, 7) with prob =  0.0587361
+                                            Bel_bar prob at index =  0.005417009790169345
+                                             
+                                            GT     : (-0.593, -0.077, -70.063)
+                                            Belief   : (0.900, -1.300, -30.000)
+                                            POS ERROR : (-1.493, 1.223, -40.063)
+                                            ---------- UPDATE STATS -----------
+                                            -------------------------------------
+                                             
+                                             
+                                            ----------------- 23 -----------------
+                                             
+                                            7200it [02:36, 45.89it/s]
+                                             
+                                             
+                                            ---------- PREDICTION STATS -----------
+                                            GT index            :  (7, 9, 8)
+                                            Prior Bel index     :  (9, 8, 11) with prob =  0.0082973
+                                            POS ERROR      : (-0.311, 0.141, -62.767)
+                                            ---------- PREDICTION STATS -----------
+                                             | Executing Observation Loop at: 30 deg/s
+                                             
+                                            ---------- UPDATE STATS -----------
+                                            GT index      :  (7, 9, 8)
+                                            Bel index     :  (10, 8, 11) with prob =  0.0495236
+                                            Bel_bar prob at index =  0.005788905232011119
+                                             
+                                            GT     : (-0.411, -0.159, -12.767)
+                                            Belief   : (0.100, -0.300, 50.000)
+                                            POS ERROR : (-0.511, 0.141, -62.767)
+                                            ---------- UPDATE STATS -----------
+                                            -------------------------------------
+                                             
+                                             
+                                            ----------------- 24 -----------------
+                                             
+                                            7200it [02:53, 41.44it/s]
+                                             
+                                             
+                                            ---------- PREDICTION STATS -----------
+                                            GT index            :  (9, 9, 9)
+                                            Prior Bel index     :  (11, 10, 11) with prob =  0.0065421
+                                            POS ERROR      : (-0.471, -0.190, -39.849)
+                                            ---------- PREDICTION STATS -----------
+                                             | Executing Observation Loop at: 30 deg/s
+                                             
+                                            ---------- UPDATE STATS -----------
+                                            GT index      :  (9, 9, 9)
+                                            Bel index     :  (15, 10, 13) with prob =  0.0260066
+                                            Bel_bar prob at index =  0.0029099013048215906
+                                             
+                                            GT     : (-0.171, -0.090, 13.151)
+                                            Belief   : (1.100, 0.100, 90.000)
+                                            POS ERROR : (-1.271, -0.190, -76.849)
+                                            ---------- UPDATE STATS -----------
+                                            -------------------------------------
+                                             
+                                             
+                                            ----------------- 25 -----------------
+                                             
+                                            7200it [02:45, 43.48it/s]
+                                             
+                                             
+                                            ---------- PREDICTION STATS -----------
+                                            GT index            :  (10, 10, 10)
+                                            Prior Bel index     :  (11, 10, 9) with prob =  0.0049520
+                                            POS ERROR      : (-0.284, -0.024, 14.611)
+                                            ---------- PREDICTION STATS -----------
+                                             | Executing Observation Loop at: 30 deg/s
+                                             
+                                            ---------- UPDATE STATS -----------
+                                            GT index      :  (10, 10, 10)
+                                            Bel index     :  (11, 10, 8) with prob =  0.0353922
+                                            Bel_bar prob at index =  0.0036500830940692816
+                                             
+                                            GT     : (0.016, 0.076, 24.611)
+                                            Belief   : (0.300, 0.100, -10.000)
+                                            POS ERROR : (-0.284, -0.024, 34.611)
+                                            ---------- UPDATE STATS -----------
+                                            -------------------------------------
+                                    </code></pre>
+                                    <P>My inference on why certain positions may lead to better results is that there may be multiple places where the 360 degree scan returns similar values to another point. This
+                                        can lead to a wrong estimate, which can then lead to predictions becoming more and more off as the program continues. Additionally, I think that there is naturally a lot of error
+                                        due to the relatively high sigma values which can 
+                                    </P>
                                     <ul class="list-inline">
-                                        <li>Date: </li>
+                                        <li>Date: 10/29/20</li>
                                     </ul>
+                                    <p></p>
                                     <button class="btn btn-primary" data-dismiss="modal" type="button">
                                         <i class="fas fa-times mr-1"></i>
                                         Close Project
