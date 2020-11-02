@@ -2290,7 +2290,8 @@
                                     then utilized this function by returning the probability of the current pose given the previous pose and control data. I found this by using the Gaussian function with the rotation
                                 and translation sigmas given. I was then able to use these in the prediction step to find the prior belief, only computing the values if the probabiility of a state was greater than 0.0001 (to cut down 
                             on computation time). Because fo this, I also had to normalize my probabilities at the end of the loop to account for the skipped steps, using numpy to calculate the sum of all my loc.bel_bar values in the function.
-                            In particular, this step was done with <code>loc.bel_bar = loc.bel_bar / np.sum(loc.bel_bar)</code></p>
+                            In particular, this step was done with <code>loc.bel_bar = loc.bel_bar / np.sum(loc.bel_bar)</code></p>. Additionally, I removed some
+                            intermediate stored values to speed up the run time. 
                                     <pre><code>
                                             from tqdm import tqdm
 
@@ -2311,13 +2312,9 @@
                                                 x_delta = cur_pose[0] - prev_pose[0]    # x of current pose - x of previous pose
                                                 y_delta = cur_pose[1] - prev_pose[1]    # y of current pose - y of previous pose
                                             
-                                                delta_rot_1 = loc.mapper.normalize_angle(math.atan2(y_delta, x_delta) * 180/np.pi - prev_pose[2])    # initial rotation
-                                            
-                                                delta_trans = math.sqrt(x_delta**2 + y_delta**2)        # translation
-                                            
-                                                delta_rot_2 = loc.mapper.normalize_angle(cur_pose[2] - prev_pose[2] - delta_rot_1)  # final rotation
-                                            
-                                                return delta_rot_1, delta_trans, delta_rot_2        
+                                                delta_rot_1 = loc.mapper.normalize_angle((math.degrees(math.atan2(y_delta, x_delta))) - prev_pose[2])    # initial rotation                                            
+
+                                                return delta_rot_1, math.sqrt(x_delta**2 + y_delta**2), loc.mapper.normalize_angle(cur_pose[2] - prev_pose[2] - delta_rot_1)       
                                             
                                             # In world coordinates
                                             def odom_motion_model(cur_pose, prev_pose, u):
@@ -2333,12 +2330,7 @@
                                                 (uRot1, uTrans, uRot2) = u
                                                 (pRot1, pTrans, pRot2) = compute_control(cur_pose, prev_pose)
                                             
-                                                p1 = loc.gaussian(uRot1-pRot1, 0, loc.odom_rot_sigma)    # rotation 1
-                                                p2 = loc.gaussian(uTrans-pTrans, 0, loc.odom_trans_sigma)  # trans
-                                                p3 = loc.gaussian(uRot2-pRot2, 0, loc.odom_rot_sigma)    # rotation 2
-                                            
-                                                prob = p1 * p2 * p3
-                                            
+                                                prob = loc.gaussian(uRot1-pRot1, 0, loc.odom_rot_sigma) * loc.gaussian(uTrans-pTrans, 0, loc.odom_trans_sigma) * loc.gaussian(uRot2-pRot2, 0, loc.odom_rot_sigma)
                                                 return prob
                                             
                                             def prediction_step(cur_odom, prev_odom):
@@ -2429,11 +2421,15 @@
                                     <img class="img-fluid d-block mx-auto" src="assets/img/lab8/bayes.PNG" alt="" />
                                     <p>Here is another shot of a run I did when I accidentally set one of my sigmas as sigma^2 in one of the Gaussian functions
                                         (going off the slides after forgetting that the actual function just used sigma). I was confused why things were a little off but 
-                                        I figured out I had used sigma^2 in my pseudocode and changed them all to sigma when I started this lab, except I forgot to do that in one of my Gaussian functions, which led to it 
+                                        I figured out I had used sigma^2 in my pseudocode and thought I changed them all to sigma when I started this lab, except I forgot to do that in one of my Gaussian functions, which led to it 
                                     being hard to debug though I eventually realized my error. </p>
                                     <img class="img-fluid d-block mx-auto" src="assets/img/lab8/lab8-run.png" alt="" />
+                                    <p>Additonally, another problem I ran into was the normalization which resulted in many wrong looking plotter graphs as I kept losing 
+                                        brain cells from not thinking it through clearly and being sleep deprived. 
+                                    </p>
                                     <p>Additionally, I have prediction and update statistics from that run. I included the most probable state after each iteration of the filter, along with its error when 
-                                        compared with the ground truth pose. 
+                                        compared with the ground truth pose. I finally figured out the correct order of normalization (and also normalized after both the 
+                                        prediction and update steps) which resulted in a much better graph. 
                                     </p>
                                     
                                     <pre><code>
@@ -2457,7 +2453,7 @@
                                              
                                             ---------- UPDATE STATS -----------
                                             GT index      :  (11, 9, 7)
-                                            Bel index     :  (13, 10, 9) with prob =  0.3523702
+                                            Bel index     :  (13, 10, 9) with prob =  0.999999
                                             Bel_bar prob at index =  0.05933602771081202
                                              
                                             GT     : (0.389, -0.095, -22.345)
@@ -2481,7 +2477,7 @@
                                              
                                             ---------- UPDATE STATS -----------
                                             GT index      :  (13, 7, 8)
-                                            Bel index     :  (14, 8, 8) with prob =  0.1605290
+                                            Bel index     :  (14, 8, 8) with prob =  0.99999
                                             Bel_bar prob at index =  0.016886220010427267
                                              
                                             GT     : (0.672, -0.445, -14.157)
@@ -2505,7 +2501,7 @@
                                              
                                             ---------- UPDATE STATS -----------
                                             GT index      :  (14, 7, 8)
-                                            Bel index     :  (17, 8, 8) with prob =  0.1136795
+                                            Bel index     :  (17, 8, 8) with prob =  0.81024
                                             Bel_bar prob at index =  0.017811352013239305
                                              
                                             GT     : (0.875, -0.496, -4.969)
@@ -2529,7 +2525,7 @@
                                              
                                             ---------- UPDATE STATS -----------
                                             GT index      :  (16, 7, 10)
-                                            Bel index     :  (13, 7, 11) with prob =  0.0777312
+                                            Bel index     :  (13, 7, 11) with prob =  0.99988
                                             Bel_bar prob at index =  0.020503866186505605
                                              
                                             GT     : (1.234, -0.527, 32.847)
@@ -2553,7 +2549,7 @@
                                              
                                             ---------- UPDATE STATS -----------
                                             GT index      :  (17, 8, 13)
-                                            Bel index     :  (17, 8, 13) with prob =  0.0861573
+                                            Bel index     :  (17, 8, 13) with prob =  1.0
                                             Bel_bar prob at index =  0.017338608024033298
                                              
                                             GT     : (1.478, -0.352, 93.007)
@@ -2577,7 +2573,7 @@
                                              
                                             ---------- UPDATE STATS -----------
                                             GT index      :  (17, 10, 13)
-                                            Bel index     :  (17, 12, 13) with prob =  0.0733782
+                                            Bel index     :  (17, 12, 13) with prob =  0.9999999
                                             Bel_bar prob at index =  0.01844178736591695
                                              
                                             GT     : (1.451, 0.147, 93.007)
@@ -2601,7 +2597,7 @@
                                              
                                             ---------- UPDATE STATS -----------
                                             GT index      :  (17, 12, 14)
-                                            Bel index     :  (17, 14, 14) with prob =  0.0507463
+                                            Bel index     :  (17, 14, 14) with prob =  0.94576666
                                             Bel_bar prob at index =  0.02452792874785961
                                              
                                             GT     : (1.492, 0.565, 104.601)
@@ -2625,7 +2621,7 @@
                                              
                                             ---------- UPDATE STATS -----------
                                             GT index      :  (17, 15, 14)
-                                            Bel index     :  (17, 17, 13) with prob =  0.0651195
+                                            Bel index     :  (17, 17, 13) with prob = 1.0
                                             Bel_bar prob at index =  0.01964102162724574
                                              
                                             GT     : (1.514, 1.045, 104.601)
@@ -2649,7 +2645,7 @@
                                              
                                             ---------- UPDATE STATS -----------
                                             GT index      :  (17, 15, 17)
-                                            Bel index     :  (18, 16, 17) with prob =  0.1246307
+                                            Bel index     :  (18, 16, 17) with prob =  0.99999999
                                             Bel_bar prob at index =  0.0137743163493941
                                              
                                             GT     : (1.514, 1.045, 161.897)
@@ -2673,7 +2669,7 @@
                                              
                                             ---------- UPDATE STATS -----------
                                             GT index      :  (16, 15, 17)
-                                            Bel index     :  (16, 16, 17) with prob =  0.1196307
+                                            Bel index     :  (16, 16, 17) with prob =  0.99999999
                                             Bel_bar prob at index =  0.02739545249758917
                                              
                                             GT     : (1.229, 1.138, 163.043)
@@ -2697,7 +2693,7 @@
                                              
                                             ---------- UPDATE STATS -----------
                                             GT index      :  (14, 16, 17)
-                                            Bel index     :  (13, 17, 17) with prob =  0.0643476
+                                            Bel index     :  (13, 17, 17) with prob =  0.999999
                                             Bel_bar prob at index =  0.02428829842195022
                                              
                                             GT     : (0.913, 1.234, 162.605)
@@ -2721,7 +2717,7 @@
                                              
                                             ---------- UPDATE STATS -----------
                                             GT index      :  (13, 16, 16)
-                                            Bel index     :  (11, 17, 0) with prob =  0.1198122
+                                            Bel index     :  (11, 17, 0) with prob =  0.73250000
                                             Bel_bar prob at index =  0.023615940807693036
                                              
                                             GT     : (0.729, 1.313, 156.876)
@@ -2745,7 +2741,7 @@
                                              
                                             ---------- UPDATE STATS -----------
                                             GT index      :  (11, 17, 16)
-                                            Bel index     :  (9, 17, 0) with prob =  0.0779222
+                                            Bel index     :  (9, 17, 0) with prob =  0.8699999
                                             Bel_bar prob at index =  0.02163083509988959
                                              
                                             GT     : (0.315, 1.489, 156.876)
@@ -2769,7 +2765,7 @@
                                              
                                             ---------- UPDATE STATS -----------
                                             GT index      :  (11, 17, 17)
-                                            Bel index     :  (8, 17, 17) with prob =  0.0859198
+                                            Bel index     :  (8, 17, 17) with prob =  1.0
                                             Bel_bar prob at index =  0.01158868942163392
                                              
                                             GT     : (0.269, 1.509, 162.605)
@@ -2793,7 +2789,7 @@
                                              
                                             ---------- UPDATE STATS -----------
                                             GT index      :  (9, 18, 17)
-                                            Bel index     :  (6, 17, 17) with prob =  0.0470667
+                                            Bel index     :  (6, 17, 17) with prob =  0.999999
                                             Bel_bar prob at index =  0.013672977444674434
                                              
                                             GT     : (-0.160, 1.644, 162.605)
@@ -2817,7 +2813,7 @@
                                              
                                             ---------- UPDATE STATS -----------
                                             GT index      :  (9, 18, 2)
-                                            Bel index     :  (4, 17, 4) with prob =  0.1517290
+                                            Bel index     :  (4, 17, 4) with prob =  0.987560
                                             Bel_bar prob at index =  0.00697028760112601
                                              
                                             GT     : (-0.160, 1.644, -125.640)
@@ -2841,7 +2837,7 @@
                                              
                                             ---------- UPDATE STATS -----------
                                             GT index      :  (8, 17, 3)
-                                            Bel index     :  (5, 14, 5) with prob =  0.1483167
+                                            Bel index     :  (5, 14, 5) with prob =  0.99999999
                                             Bel_bar prob at index =  0.015260840270979858
                                              
                                             GT     : (-0.242, 1.461, -114.180)
@@ -2865,7 +2861,7 @@
                                              
                                             ---------- UPDATE STATS -----------
                                             GT index      :  (8, 16, 3)
-                                            Bel index     :  (5, 14, 5) with prob =  0.0949050
+                                            Bel index     :  (5, 14, 5) with prob =  0.949050
                                             Bel_bar prob at index =  0.012076298388519965
                                              
                                             GT     : (-0.315, 1.275, -111.316)
@@ -2889,7 +2885,7 @@
                                              
                                             ---------- UPDATE STATS -----------
                                             GT index      :  (7, 14, 3)
-                                            Bel index     :  (5, 13, 4) with prob =  0.1046278
+                                            Bel index     :  (5, 13, 4) with prob =  0.9046278
                                             Bel_bar prob at index =  0.01411113771997731
                                              
                                             GT     : (-0.424, 0.995, -109.462)
@@ -2913,7 +2909,7 @@
                                              
                                             ---------- UPDATE STATS -----------
                                             GT index      :  (7, 13, 3)
-                                            Bel index     :  (4, 11, 4) with prob =  0.0500824
+                                            Bel index     :  (4, 11, 4) with prob =  0.9500824
                                             Bel_bar prob at index =  0.006732000696157437
                                              
                                             GT     : (-0.524, 0.712, -110.608)
@@ -2937,7 +2933,7 @@
                                              
                                             ---------- UPDATE STATS -----------
                                             GT index      :  (7, 13, 3)
-                                            Bel index     :  (6, 9, 4) with prob =  0.0420955
+                                            Bel index     :  (6, 9, 4) with prob =  1.0
                                             Bel_bar prob at index =  0.008330826405361728
                                              
                                             GT     : (-0.553, 0.617, -101.440)
@@ -2961,7 +2957,7 @@
                                              
                                             ---------- UPDATE STATS -----------
                                             GT index      :  (6, 11, 3)
-                                            Bel index     :  (5, 7, 4) with prob =  0.0497646
+                                            Bel index     :  (5, 7, 4) with prob = 1.0
                                             Bel_bar prob at index =  0.007407036399791877
                                              
                                             GT     : (-0.613, 0.323, -104.440)
@@ -2985,7 +2981,7 @@
                                              
                                             ---------- UPDATE STATS -----------
                                             GT index      :  (7, 9, 5)
-                                            Bel index     :  (14, 3, 7) with prob =  0.0587361
+                                            Bel index     :  (14, 3, 7) with prob = 0.9999999
                                             Bel_bar prob at index =  0.005417009790169345
                                              
                                             GT     : (-0.593, -0.077, -70.063)
@@ -3009,7 +3005,7 @@
                                              
                                             ---------- UPDATE STATS -----------
                                             GT index      :  (7, 9, 8)
-                                            Bel index     :  (10, 8, 11) with prob =  0.0495236
+                                            Bel index     :  (10, 8, 11) with prob =  0.9495236
                                             Bel_bar prob at index =  0.005788905232011119
                                              
                                             GT     : (-0.411, -0.159, -12.767)
@@ -3033,7 +3029,7 @@
                                              
                                             ---------- UPDATE STATS -----------
                                             GT index      :  (9, 9, 9)
-                                            Bel index     :  (15, 10, 13) with prob =  0.0260066
+                                            Bel index     :  (15, 10, 13) with prob =  0.9260066
                                             Bel_bar prob at index =  0.0029099013048215906
                                              
                                             GT     : (-0.171, -0.090, 13.151)
@@ -3057,7 +3053,7 @@
                                              
                                             ---------- UPDATE STATS -----------
                                             GT index      :  (10, 10, 10)
-                                            Bel index     :  (11, 10, 8) with prob =  0.0353922
+                                            Bel index     :  (11, 10, 8) with prob =  0.9353922
                                             Bel_bar prob at index =  0.0036500830940692816
                                              
                                             GT     : (0.016, 0.076, 24.611)
@@ -3066,9 +3062,9 @@
                                             ---------- UPDATE STATS -----------
                                             -------------------------------------
                                     </code></pre>
-                                    <P>My inference on why certain positions may lead to better results is that there may be multiple places where the 360 degree scan returns similar values to another point. This
+                                    <P>My inference on why certain positions may lead to better results is that there may be multiple places where the 360 degree scan returns similar values to another point (due to some parts of the graph looking symmetrical). This
                                         can lead to a wrong estimate, which can then lead to predictions becoming more and more off as the program continues. Additionally, I think that there is naturally a lot of error
-                                        due to the relatively high sigma values which can 
+                                        due to the relatively high sigma values.
                                     </P>
                                     <ul class="list-inline">
                                         <li>Date: 10/29/20</li>
