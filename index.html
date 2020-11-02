@@ -2426,6 +2426,11 @@
                                     <p>Here is a shot of my grid localization code in the plotter after one of my runs. As seen, the odometry data (the blue) becomes extremely offset as more time goes on and was very unreliable.
                                         However, the ground truth (the green) and the belief position (the yellow) demonstrate the effectiveness of the Bayes filter, with the robot being able to execute clean looking obstacle 
                                     avoidance, though it might take a couple of minutes to run. </p>
+                                    <img class="img-fluid d-block mx-auto" src="assets/img/lab8/bayes.PNG" alt="" />
+                                    <p>Here is another shot of a run I did when I accidentally set one of my sigmas as sigma^2 in one of the Gaussian functions
+                                        (going off the slides after forgetting that the actual function just used sigma). I was confused why things were a little off but 
+                                        I figured out I had used sigma^2 in my pseudocode and changed them all to sigma when I started this lab, except I forgot to do that in one of my Gaussian functions, which led to it 
+                                    being hard to debug though I eventually realized my error. </p>
                                     <img class="img-fluid d-block mx-auto" src="assets/img/lab8/lab8-run.png" alt="" />
                                     <p>Additionally, I have prediction and update statistics from that run. I included the most probable state after each iteration of the filter, along with its error when 
                                         compared with the ground truth pose. 
