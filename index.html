@@ -3093,11 +3093,347 @@
                                     <!-- Project Details Go Here-->
                                     <h2 class="text-uppercase">Lab 9</h2>
                                     <p class="item-intro text-muted">Localization</p>
-                                    <img class="img-fluid d-block mx-auto" src="https://previews.123rf.com/images/freaktor/freaktor1908/freaktor190800342/132521020-gps-icon-vector-design-map-pointer-icon-pin-location-symbol-flat-design-style-navigation-icons-for-w.jpg" alt="" />
-                                    <p>Description of lab</p>
+                                    <p>The purpose of this lab was to localizse in the map using my actual robot. We were provided with a fully-functional and optimized Bayes filter implementation, and I set
+                                        up the base code which consisted of robot_interface.py (a fully-functional Localization module), lab9_sim.ipynb (the Bayes filter),
+                                        lab9_doc.ipynb (documentation), and lab9_real.ipynb (skeleton code).
+                                    </p>
+                                    <p>When first starting out, I had an issue with ray tracking since my room was not in a rectangular shape. I got errors in mapper.populate_views().
+                                        It looks like any cell must be enclosed in the map by walls when doing ray tracing. I could either change the ray tracing code 
+                                        to skip the cell outside the wall or just add an outer rectangular border (I did the latter). My map is shown below:
+                                    </p>
+                                    <img class="img-fluid d-block mx-auto" src="assets/img/lab9/map.PNG" alt="" />
+                                    <p>At each observation point, I used my PID controlled robot to turn the robot 360 degrees to scan its surroundings. I then used numpy interpolation 
+                                        to pair down the value into 18 data points to fit the model. The original values are in green and the downsampled results are in red. 
+                                    </p>
+                                    <pre><code>
+                                            dsAngRadian21 = np.linspace(0,2*np.pi,num=18)
+                                            dsDist21 = np.interp(dsAngRadian21, angRadian21, dist21)                                            
+                                    </code></pre>
+                                    <img class="img-fluid d-block mx-auto" src="assets/img/lab9/interpolation.PNG" alt="" />
+                                    <p>After setting the uniform distribution bel_bar and running the update_step function, I got (13,15,1) as the estimated location (
+                                        the red X in the above image). Obviously, this result was pretty bad. 
+                                    </p>
+                                    <pre><code>
+                                            ---------- UPDATE STATS -----------
+                                            GT index      :  (10, 10, 9)
+                                            Bel index     :  (13, 15, 1) with prob =  0.9844728
+                                            Bel_bar prob at index =  0.0001388888888888889
+                                            
+                                            GT     : (0.000, 0.000, 3.000)
+                                            Belief   : (0.700, 1.100, -150.000)
+                                            POS ERROR : (-0.700, -1.100, 153.000)
+                                            ---------- UPDATE STATS -----------                                            
+                                    </code></pre>
+                                    <p>I then decided to set the probability of being outside my map to be 0 to fix this issue. After doing this, I ran the localization 
+                                        code again.
+                                    </p>
+                                    <pre><code>
+                                            ---------- UPDATE STATS -----------
+                                            GT index      :  (10, 10, 9)
+                                            Bel index     :  (10, 10, 9) with prob =  0.9999902
+                                            Bel_bar prob at index =  0.0001388888888888889
+                                            
+                                            GT     : (0.000, -1.100, 3.000)
+                                            Belief   : (0.100, -0.900, 10.000)
+                                            POS ERROR : (-0.100, -0.200, -7.000)
+                                            ---------- UPDATE STATS -----------                                            
+                                    </code></pre>
+                                    <p>This fixed the problem and I got the image below, with the green triangle being the ground truth and 
+                                        the red X being the estimated location. 
+                                    </p>
+                                    <img class="img-fluid d-block mx-auto" src="assets/img/lab9/map1.PNG" alt="" />
+                                    <p>I picked a couple of additional locations and ran the localization code, getting pretty decent results. I think my map 
+                                        is pretty distinctive so there aren't that many problems with the robot mistaking its location for another similar location on the map. 
+                                    </p>
+                                    <p>This example, I decided to try a random location on the map. 
+                                    </p>
+                                    <pre><code>
+                                            Initializing beliefs with a Uniform Distribution
+                                            Uniform Belief with each cell value:  0.0001388888888888889
+                                            Update Step
+                                                 | Update Time:  0.005866050720214844
+                                            
+                                            ---------- UPDATE STATS -----------
+                                            GT index      :  (5, 14, 9)
+                                            Bel index     :  (5, 14, 9) with prob =  0.9998330
+                                            Bel_bar prob at index =  0.0001388888888888889
+                                            
+                                            GT     : (-1.000, 0.750, 3.000)
+                                            Belief   : (-0.900, 0.900, 10.000)
+                                            POS ERROR : (0.200, -0.150, -7.000)
+                                            ---------- UPDATE STATS -----------
+                                    </code></pre>
+                                    <img class="img-fluid d-block mx-auto" src="assets/img/lab9/map2.PNG" alt="" />
+                                    <p>I then tried to map out some of the more distinctive features. I did multiple locations, which basically all of them being 
+                                        very accurate when starting the robot at the exact same orientation. One of those distinctive features (a corner-like area that 
+                                        was also close to an obstacle) is shown below.</p>
+                                    <pre><code>
+                                            ---------- UPDATE STATS -----------
+                                            Bel index     :  (4, 5, 9) with prob =  0.9999994
+                                            Bel_bar prob at index =  0.0001388888888888889
+                                            Belief   : (-1.100, -0.900, 10.000)
+                                            ---------- UPDATE STATS -----------                                            
+                                    </code></pre>
+                                    <img class="img-fluid d-block mx-auto" src="assets/img/lab9/map3.PNG" alt="" />
+                                    <p>I then tested different orientations. I quickly found that this made things very inaccurate in terms of 
+                                        interpolation as the data collected did not correlate to the ray tracing view from the code, leading to a different between the 
+                                        ray tracing view (blue) vs the observations (orange). Therefore, orientation is important when running the localization code. 
+                                    </p>
+                                    <img class="img-fluid d-block mx-auto" src="assets/img/lab9/trial.PNG" alt="" />
+                                    <p><b>Localization with Motion</b></p>
+                                    <p>As I was running a bit short on time, I used open loop control to control how long the motors would be activated in terms of milliseconds
+                                        at each stage (turning, going forwards, and turning). For the turning functions, I used the gyroscope to estimate the turning angle. For
+                                        going forwards, I used the TOF sensor to measure the distance. I will note that the odometry readings have a lot of noise and could be pretty 
+                                        inaccurate (slightly sus).
+                                    </p>
+                                    <pre><code>
+                                            void moveStep( int time1, int time2, int time3){
+
+                                                float a1 = turnCC(time1);
+                                                float d = forward(time2);
+                                                float a2 = turnCC(time3);
+                                                
+                                                Serial.print(a1); 
+                                                Serial.print(", ");
+                                                Serial.print(d); 
+                                                Serial.print(", ");
+                                                Serial.println(a2); 
+                                            
+                                            }
+
+                                            float forward(int time){
+                                                float preD = getDistance();
+                                                myMotorDriver.setDrive( 0, 1, _pwrLevel); //Drive motor i forward at full speed
+                                                myMotorDriver.setDrive( 1, 1, _pwrLevel*_adjustPercent);    
+                                                delay(time);
+                                              
+                                                motorStop();
+                                                float myDist = abs(getDistance() - preD);
+                                                return myDist;
+                                              }
+                                              
+                                              float turnCC(int time){
+                                                  digitalWrite( LED_BUILTIN, HIGH );
+                                                  myMotorDriver.setDrive( 0, 0, _pwrLevel); 
+                                                  myMotorDriver.setDrive( 1, 1, _pwrLevel*_adjustPercent);       
+                                                  delay(time);
+                                                  myICM.getAGMT(); 
+                                                  float myYaw = myICM.gyrZ()*time/1000;
+                                                  if (abs(myYaw) > 360) myYaw = 0;
+                                                  motorStop();
+                                                  return myYaw;
+                                              }                                              
+                                    </code></pre>
+                                    <p>My preplanned sequence of robot poses (4 steps) is as follows: </p>
+                                    <pre><code>
+                                            moveStep(0,1200,200);
+                                            moveStep(0,2200,250);
+                                            moveStep(0,1700,500);
+                                            moveStep(0,1000,500);                                             
+                                    </code></pre>
+                                    <p>During the robot movements, I manually marked the center of every stop of the robot with a tiny piece of tape and then recorded the orientation of the robot
+                                        at each stop. The robot is quite unpredictable (so PID probably would have been the better choice). This meant that after the sequences were completed, 
+                                        I came back to each stop point and manually had to place the robot with the exact orientation I recorded earlier to run the 360 degree scan from that point. 
+                                        The data collected from each scan ended up being around 90-98 points. I paired these down to 18 data points to fit into my model using numpy interpolation. 
+                                    </p>
+                                    <pre><code>
+                                            robotCtrOffset = 0.1  
+                                            # use interpolation to downsample to 18 angles
+                                            a= np.linspace(0,2*np.pi,num=18)
+                                            
+                                            d0= np.interp(a, myScan0[1:96][:,2]  * np.pi /180, myScan0[1:96][:,4]/1000 + robotCtrOffset)
+                                            d1= np.interp(a, myScan1[1:94][:,2]  * np.pi /180, myScan1[1:94][:,4]/1000 + robotCtrOffset)
+                                            d2= np.interp(a, myScan2[1:98][:,2]  * np.pi /180, myScan2[1:98][:,4]/1000 + robotCtrOffset)
+                                            d3= np.interp(a, myScan3[1:95][:,2]  * np.pi /180, myScan3[1:95][:,4]/1000 + robotCtrOffset)
+                                            d4= np.interp(a, myScan4[1:98][:,2]  * np.pi /180, myScan4[1:98][:,4]/1000 + robotCtrOffset)                                            
+                                    </code></pre>
+                                    <p>Here are my paired down results in polar representation:</p>
+                                    <img class="img-fluid d-block mx-auto" src="assets/img/lab9/polar1.PNG" alt="" />
+                                    <img class="img-fluid d-block mx-auto" src="assets/img/lab9/polar2.PNG" alt="" />
+                                    <img class="img-fluid d-block mx-auto" src="assets/img/lab9/polar3.PNG" alt="" />
+                                    <img class="img-fluid d-block mx-auto" src="assets/img/lab9/polar4.PNG" alt="" />
+                                    <img class="img-fluid d-block mx-auto" src="assets/img/lab9/polar5.PNG" alt="" />
+                                    <p>I also have my ground truth (manually measured) and odometry (estimated from gyroscope and TOF sensor) data:</p>
+                                    <pre><code>
+                                            gtX = [-0.22, -1.3, -1.3, 0.28, -0.6]
+                                            gtY = [1.03, 0.99, -1.19, -0.79, -0.76]
+                                            gtA = [-179, -90, 25, 170, -80]
+                                            
+                                            odX = [-0.22, -1.2, -0.8, 0.23, -0.02]
+                                            odY = [1.03, 1.0, -0.2, -0.34, -0.09]
+                                            odA = [-172, -73, -21, 120, -150]                                            
+                                    </code></pre>
+                                    <p>I could then run the Bayes Filter code for localization:</p>
+                                    <pre><code>
+                                            # Reset Plots
+                                            robot.reset()
+                                            loc.plotter.reset_plot()
+                                            
+                                            # Init Uniform Belief
+                                            loc.init_pose()
+                                            
+                                            # Get Observation Data by executing a 360 degree rotation motion
+                                            loc.override_observation_data(d0)
+                                            
+                                            # Run Update Step
+                                            loc.update_step()
+                                            loc.print_update_stats(plot_data=True)
+                                                
+                                            gtX = [-0.22, -1.3, -1.3, 0.28, -0.6]
+                                            gtY = [1.03, 0.99, -1.19, -0.79, -0.76]
+                                            gtA = [-179, -90, 25, 170, -80]
+                                            
+                                            odX = [-0.22, -1.2, -0.8, 0.23, -0.02]
+                                            odY = [1.03, 1.0, -0.2, -0.34, -0.09]
+                                            odA = [-172, -73, -21, 120, -150]
+                                            
+                                            # # Run through each robot steps
+                                            for t in range(0, 4):
+                                            
+                                                print("\n\n-----------------", t, "-----------------")
+                                                
+                                                prev_odom = (odX[t], odY[t], odA[t])
+                                                current_odom = (odX[t+1], odY[t+1], odA[t+1])
+                                                prev_gt = (gtX[t], gtY[t], gtA[t])
+                                                current_gt = (gtX[t+1], gtY[t+1], gtA[t+1])
+                                                
+                                                print(prev_odom, current_odom, prev_gt, current_gt)
+                                                
+                                                # Prediction Step
+                                                loc.prediction_step(current_odom, prev_odom)
+                                                loc.print_prediction_stats(plot_data=True)
+                                                
+                                                # Get Observation Data by executing a 360 degree rotation motion
+                                                if  t==0 :
+                                                    loc.override_observation_data(d1)
+                                                if  t==1:
+                                                    loc.override_observation_data(d2)
+                                                if  t==2:
+                                                    loc.override_observation_data(d3)
+                                                if  t==3:
+                                                    loc.override_observation_data(d4)
+                                                
+                                                # Update Step    
+                                                loc.update_step()
+                                                loc.print_update_stats(plot_data=True)                                            
+                                    </code></pre>
+                                    <p>I then ran the code to get the results of the 4 step localization process:</p>
+                                    <pre><code>
+                                            | Resetting Robot pose
+                                            Initializing beliefs with a Uniform Distribution
+                                            Uniform Belief with each cell value:  0.0001388888888888889
+                                            Update Step
+                                                 | Update Time:  0.004258632659912109
+                                            
+                                            ---------- UPDATE STATS -----------
+                                            Bel index     :  (8, 14, 0) with prob =  0.9999999
+                                            Bel_bar prob at index =  0.0001388888888888889
+                                            Belief   : (-0.300, 0.900, -170.000)
+                                            ---------- UPDATE STATS -----------
+                                            
+                                            
+                                            ----------------- 0 -----------------
+                                            (-0.22, 1.03, -172) (-1.2, 1.0, -73) (-0.22, 1.03, -179) (-1.3, 0.99, -90)
+                                            Prediction Step
+                                            Uniform Belief with each cell value:  3.445624839808449e-37
+                                                 | Prediction Time:  0.13054585456848145
+                                            
+                                            ---------- PREDICTION STATS -----------
+                                            Prior Bel index     :  (3, 14, 5) with prob =  0.0373952
+                                            ---------- PREDICTION STATS -----------
+                                            Update Step
+                                                 | Update Time:  0.0046346187591552734
+                                            
+                                            ---------- UPDATE STATS -----------
+                                            Bel index     :  (2, 14, 5) with prob =  1.0
+                                            Bel_bar prob at index =  0.03002410192390646
+
+                                            Belief   : (-1.500, 0.900, -70.000)
+                                            ---------- UPDATE STATS -----------
+                                            -------------------------------------
+                                            
+                                            
+                                            ----------------- 1 -----------------
+                                            (-1.2, 1.0, -73) (-0.8, -0.2, -21) (-1.3, 0.99, -90) (-1.3, -1.19, 25)
+                                            Prediction Step
+                                            Uniform Belief with each cell value:  6.527777690058746e-21
+                                                 | Prediction Time:  0.13402700424194336
+                                            
+                                            ---------- PREDICTION STATS -----------
+                                            Prior Bel index     :  (5, 8, 8) with prob =  0.0279986
+                                            ---------- PREDICTION STATS -----------
+                                            Update Step
+                                                 | Update Time:  0.00768589973449707
+                                            
+                                            ---------- UPDATE STATS -----------
+                                            Bel index     :  (3, 4, 9) with prob =  1.0
+                                            Bel_bar prob at index =  2.0025889666409172e-05
+                                            
+                                            GT     : (0.000, 0.000, 0.000)
+                                            Belief   : (-1.300, -1.100, 10.000)
+                                            ---------- UPDATE STATS -----------
+                                            -------------------------------------
+                                            
+                                            
+                                            ----------------- 2 -----------------
+                                            (-0.8, -0.2, -21) (0.23, -0.34, 120) (-1.3, -1.19, 25) (0.28, -0.79, 170)
+                                            Prediction Step
+                                            Uniform Belief with each cell value:  1.1666294912684574e-50
+                                                 | Prediction Time:  0.1338489055633545
+                                            
+                                            ---------- PREDICTION STATS -----------
+                                            Prior Bel index     :  (8, 6, 16) with prob =  0.0372961
+                                            ---------- PREDICTION STATS -----------
+                                            Update Step
+                                                 | Update Time:  0.005566835403442383
+                                            
+                                            ---------- UPDATE STATS -----------
+                                            Bel index     :  (12, 6, 0) with prob =  0.9703104
+                                            Bel_bar prob at index =  6.143224898420639e-06
+                                            
+                                            Belief   : (0.500, -0.700, -170.000)
+                                            ---------- UPDATE STATS -----------
+                                            -------------------------------------
+                                            
+                                            
+                                            ----------------- 3 -----------------
+                                            (0.23, -0.34, 120) (-0.02, -0.09, -150) (0.28, -0.79, 170) (-0.6, -0.76, -80)
+                                            Prediction Step
+                                            Uniform Belief with each cell value:  2.792284949622646e-19
+                                                 | Prediction Time:  0.7914981842041016
+                                            
+                                            ---------- PREDICTION STATS -----------
+                                            Prior Bel index     :  (10, 5, 5) with prob =  0.0871289
+                                            ---------- PREDICTION STATS -----------
+                                            Update Step
+                                                 | Update Time:  0.0040400028228759766
+                                            
+                                            ---------- UPDATE STATS -----------
+                                            Bel index     :  (7, 5, 5) with prob =  0.9999999
+                                            Bel_bar prob at index =  0.003112287991066192
+
+                                            Belief   : (-0.500, -0.900, -70.000)
+                                            ---------- UPDATE STATS -----------
+                                            -------------------------------------
+                                            
+                                    </code></pre>
+                                    <p>I plotted the ground truth (green), odometry (blue), and belief data (yellow) as well.</p>
+                                    <img class="img-fluid d-block mx-auto" src="assets/img/lab9/run.PNG" alt="" />
+                                    <p>In terms of the results, I found that 
+                                        the odometry data actually seems to not make a huge difference in my localization estimate? In fact, I ran the 
+                                        Bayes Filter code with and without the prediction step. The result was almost identical with a very minor difference of (12,6,1) vs (
+                                            (12,6,0) on the 3rd pose. </p>
+                                    <p>I noticed that the use of the prediction step definitely increases the computation time since it takes longer than the update step. For example,
+                                        for one of the steps, the prediction time is 0.791 while the update time is 0.004s, which is a significant increase in time. </p>
+                                    <p>I tried to control the orientation of the robot when it was going through the steps, but there is some error when the robot is turning. This leads
+                                        to an offset in angle that continues with the more steps you run. Additionally, the gyroscope is quite a noisy sensor since, like the odometry data
+                                        for the virtual robot, the data from it becomes increasingly off as time goes on. 
+                                    </p>
+
                                     <ul class="list-inline">
-                                        <li>Date: </li>
+                                        <li>Date: 11/7/20 </li>
                                     </ul>
+                                    <p></p>
                                     <button class="btn btn-primary" data-dismiss="modal" type="button">
                                         <i class="fas fa-times mr-1"></i>
                                         Close Project
