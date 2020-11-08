@@ -2424,12 +2424,11 @@
                                         I figured out I had used sigma^2 in my pseudocode and thought I changed them all to sigma when I started this lab, except I forgot to do that in one of my Gaussian functions, which led to it 
                                     being hard to debug though I eventually realized my error. </p>
                                     <img class="img-fluid d-block mx-auto" src="assets/img/lab8/lab8-run.png" alt="" />
-                                    <p>Additonally, another problem I ran into was the normalization which resulted in many wrong looking plotter graphs as I kept losing 
-                                        brain cells from not thinking it through clearly and being sleep deprived. 
-                                    </p>
-                                    <p>Additionally, I have prediction and update statistics from that run. I included the most probable state after each iteration of the filter, along with its error when 
-                                        compared with the ground truth pose. I finally figured out the correct order of normalization (and also normalized after both the 
-                                        prediction and update steps) which resulted in a much better graph. 
+                                    <p>I took the prediction and update statistics from my runs and 
+                                            I included the most probable state after each iteration of the filter, along with its error when 
+                                            compared with the ground truth pose. Additonally, another problem I ran into was the normalization which resulted in many wrong looking plotter graphs as I kept losing 
+                                        brain cells from not thinking it through clearly and being on my last functioning brain cell. I finally figured out the correct order of normalization (and also normalized after both the 
+                                        prediction and update steps) which resulted in a better graph. 
                                     </p>
                                     
                                     <pre><code>
@@ -3426,8 +3425,9 @@
                                     <p>I noticed that the use of the prediction step definitely increases the computation time since it takes longer than the update step. For example,
                                         for one of the steps, the prediction time is 0.791 while the update time is 0.004s, which is a significant increase in time. </p>
                                     <p>I tried to control the orientation of the robot when it was going through the steps, but there is some error when the robot is turning. This leads
-                                        to an offset in angle that continues with the more steps you run. Additionally, the gyroscope is quite a noisy sensor since, like the odometry data
-                                        for the virtual robot, the data from it becomes increasingly off as time goes on. 
+                                        to an offset in angle that continues with the more steps you run. The turning angle is also dependent on the power of the motors 
+                                        (the battery life) and becomes quite finnicky (which is probably why I should have used PID, oops). I think this seems to be a large source of error when running the 
+                                        localization code. There is also the error from the odometry data, but that actually doesn't seem to cause drastic inaccuracies. 
                                     </p>
 
                                     <ul class="list-inline">
