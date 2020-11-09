@@ -3144,7 +3144,9 @@
                                     <p>I picked a couple of additional locations and ran the localization code, getting pretty decent results. I think my map 
                                         is pretty distinctive so there aren't that many problems with the robot mistaking its location for another similar location on the map. 
                                     </p>
-                                    <p>This example, I decided to try a random location on the map. 
+                                    <p>This example, I decided to try a random location on the map at a different orientation. This did not seem to make a 
+                                        significant effect on the accuracy since the localization code tries to find the x and y coordinates as well as the angle of 
+                                        orientation.  
                                     </p>
                                     <pre><code>
                                             Initializing beliefs with a Uniform Distribution
@@ -3157,9 +3159,9 @@
                                             Bel index     :  (5, 14, 9) with prob =  0.9998330
                                             Bel_bar prob at index =  0.0001388888888888889
                                             
-                                            GT     : (-1.000, 0.750, 3.000)
-                                            Belief   : (-0.900, 0.900, 10.000)
-                                            POS ERROR : (0.200, -0.150, -7.000)
+                                            GT     : (-1.000, 0.750, 10.000)
+                                            Belief   : (-0.900, 0.900, 11.000)
+                                            POS ERROR : (0.200, -0.150, -1.000)
                                             ---------- UPDATE STATS -----------
                                     </code></pre>
                                     <img class="img-fluid d-block mx-auto" src="assets/img/lab9/map2.PNG" alt="" />
@@ -3174,13 +3176,11 @@
                                             ---------- UPDATE STATS -----------                                            
                                     </code></pre>
                                     <img class="img-fluid d-block mx-auto" src="assets/img/lab9/map3.PNG" alt="" />
-                                    
-                                    <img class="img-fluid d-block mx-auto" src="assets/img/lab9/trial.PNG" alt="" />
                                     <p><b>Localization with Motion</b></p>
                                     <p>As I was running a bit short on time, I used open loop control to control how long the motors would be activated in terms of milliseconds
                                         at each stage (turning, going forwards, and turning). For the turning functions, I used the gyroscope to estimate the turning angle. For
                                         going forwards, I used the TOF sensor to measure the distance. I will note that the odometry readings have a lot of noise and could be pretty 
-                                        inaccurate (slightly sus).
+                                        inaccurate (it is slightly sus).
                                     </p>
                                     <pre><code>
                                             void moveStep( int time1, int time2, int time3){
@@ -3421,6 +3421,9 @@
                                             (12,6,0) on the 3rd pose. </p>
                                     <p>I noticed that the use of the prediction step definitely increases the computation time since it takes longer than the update step. For example,
                                         for one of the steps, the prediction time is 0.791 while the update time is 0.004s, which is a significant increase in time. </p>
+                                    <p>I'm not sure what the biggest source of error is, but a source of error was the offset that happened when I ran many steps. My measurement 
+                                        data was pretty accurate (since the TOF sensor is good) but since there was no longer a uniform prior, if there was some inaccuracy in my prediction steps, 
+                                        the robot might not correctly predict its location anymore. 
                                     <p>Also, I have to note that I've been having to use an old bike light as something to fully discharge my batteries when I'm not using them, and before 
                                         I charge them again. This seems to improve the battery life since I think my battery life kept getting shorter and shorter if I didn't fully 
                                         discharge it from time to time. 
