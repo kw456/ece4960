@@ -3174,10 +3174,7 @@
                                             ---------- UPDATE STATS -----------                                            
                                     </code></pre>
                                     <img class="img-fluid d-block mx-auto" src="assets/img/lab9/map3.PNG" alt="" />
-                                    <p>I then tested different orientations. I quickly found that this made things very inaccurate in terms of 
-                                        interpolation as the data collected did not correlate to the ray tracing view from the code, leading to a different between the 
-                                        ray tracing view (blue) vs the observations (orange). Therefore, orientation is important when running the localization code. 
-                                    </p>
+                                    
                                     <img class="img-fluid d-block mx-auto" src="assets/img/lab9/trial.PNG" alt="" />
                                     <p><b>Localization with Motion</b></p>
                                     <p>As I was running a bit short on time, I used open loop control to control how long the motors would be activated in terms of milliseconds
@@ -3424,12 +3421,10 @@
                                             (12,6,0) on the 3rd pose. </p>
                                     <p>I noticed that the use of the prediction step definitely increases the computation time since it takes longer than the update step. For example,
                                         for one of the steps, the prediction time is 0.791 while the update time is 0.004s, which is a significant increase in time. </p>
-                                    <p>I tried to control the orientation of the robot when it was going through the steps, but there is some error when the robot is turning. This leads
-                                        to an offset in angle that continues with the more steps you run. The turning angle is also dependent on the power of the motors 
-                                        (the battery life) and becomes quite finnicky (which is probably why I should have used PID, oops). I think this seems to be a large source of error when running the 
-                                        localization code. There is also the error from the odometry data, but that actually doesn't seem to cause drastic inaccuracies. 
+                                    <p>Also, I have to note that I've been having to use an old bike light as something to fully discharge my batteries when I'm not using them, and before 
+                                        I charge them again. This seems to improve the battery life since I think my battery life kept getting shorter and shorter if I didn't fully 
+                                        discharge it from time to time. 
                                     </p>
-
                                     <ul class="list-inline">
                                         <li>Date: 11/7/20 </li>
                                     </ul>
