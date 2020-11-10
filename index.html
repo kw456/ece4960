@@ -3227,11 +3227,15 @@
                                             moveStep(0,1700,500);
                                             moveStep(0,1000,500);                                             
                                     </code></pre>
-                                    <p>During the robot movements, I manually marked the center of every stop of the robot with a tiny piece of tape and then recorded the orientation of the robot
+                                    <p>I had a lot of issues getting the Bluetooth code to work, especially with Jupyter notebook and the asyncio functions. Because of this, I 
+                                        instead used the method following as a first pass at this lab (since I wanted to get something working before I tried getting the Bluetooth module to work).  
+                                        During the robot movements, I manually marked the center of every stop of the robot with a tiny piece of tape and then recorded the orientation of the robot
                                         at each stop. The robot is quite unpredictable (so PID probably would have been the better choice). This meant that after the sequences were completed, 
-                                        I came back to each stop point and manually had to place the robot with the exact orientation I recorded earlier to run the 360 degree scan from that point. 
+                                        I came back to each stop point and manually had to place the robot with the exact orientation I recorded earlier to run the 360 degree scan from that point. I could then 
+                                        take this data (which I put in a txt file), send it to my VM through my shared folder, and use it in the ipynb localization script. 
                                         The data collected from each scan ended up being around 90-98 points. I paired these down to 18 data points to fit into my model using numpy interpolation. 
                                     </p>
+                                    <p>Update: I used an extension day to work on the Bluetooth module and seemed to have gotten it to somewhat work? (details at the end) </p>
                                     <pre><code>
                                             robotCtrOffset = 0.1  
                                             # use interpolation to downsample to 18 angles
@@ -3418,12 +3422,179 @@
                                     <p>In terms of the results, I found that 
                                         the odometry data actually seems to not make a huge difference in my localization estimate? In fact, I ran the 
                                         Bayes Filter code with and without the prediction step. The result was almost identical with a very minor difference of (12,6,1) vs (
-                                            (12,6,0) on the 3rd pose. </p>
+                                            (12,6,0) on the 3rd pose. I actually ran the bayes filter with the following 4 different setups: with the prediction step, 
+                                        without the prediction step, using a uniform distribution, and using a mass distribution at my starting point, with basically identical 
+                                    results. </p>
                                     <p>I noticed that the use of the prediction step definitely increases the computation time since it takes longer than the update step. For example,
                                         for one of the steps, the prediction time is 0.791 while the update time is 0.004s, which is a significant increase in time. </p>
                                     <p>I'm not sure what the biggest source of error is, but a source of error was the offset that happened when I ran many steps. My measurement 
                                         data was pretty accurate (since the TOF sensor is good) but since there was no longer a uniform prior, if there was some inaccuracy in my prediction steps, 
-                                        the robot might not correctly predict its location anymore. 
+                                        the robot might not correctly predict its location anymore. </p>
+                                    <p>As mentioned above, I was able to use my extension day to work on the Bluetooth module and continue getting it to work.
+                                         I was really on the strugglebus for a while since I found that I had to keep reconnecting my Bluetooth module in my VM (since apparently it had 
+                                         difficult staying recognized by the VM for a long time?), and I ended up 
+                                        restarting my VM many times throughout this lab when things weren't working (which was sadly a lot of the time, yikes). I think I've gotten 
+                                        to the point where I can send data from my TOF sensor and send it to the localization ipynb script over Bluetooth. </p>
+                                    <p>In terms of getting the BLuetooth module to work, I had to revise some of my functions and code to utilize it. I turned my 90 data points from my 360 degree scan
+                                        into 18 data points in my Arduino script instead of using numpy (because I didn't want to send extra points that I didn't need over Bluetooth). </p>
+                                    <pre><code>
+                                            void pairDown(int cycleCT){
+    
+                                                int lastIdx = -1;
+                                                for ( int i=0; i<18; i++){
+                                                  int stopPoint = i * 20; 
+                                                  for ( int j = lastIdx +1 ; j < cycleCT; j++){
+                                                    if ( scanYaw[j] > stopPoint){
+                                                      dsScanYaw[i] = scanYaw[j];
+                                                      dsScanDist[i] = scanDist[j];
+                                                      lastIdx = j;
+                                                      break;      
+                                                    } 
+                                                  }  
+                                                }
+                                            }
+                                    </code></pre>
+                                    <p> Additionally, I had to start my Bluetooth module at the start of the loop function in my Arduino code by calling my BT() function:</P>
+                                    <pre><code>
+                                            void BT() {
+                                                if (l_Rcvd > 1) //Check if we have a new message from amdtps_main.c through BLE_example_funcs.cpp
+                                              {
+                                          
+                                                  cmd = (cmd_t *)m_Rcvd;
+                                                  switch (cmd->command_type)
+                                                  {
+                                                  case SET_MOTORS:
+                                                      Serial.println("Placeholder: Set Motors");
+                                                      Serial.println((char *)&cmd->data);
+                                                      enable_PID = true;
+                                                      break;
+                                                  case GET_MOTORS:
+                                                      Serial.println("Placeholder: Set Motors");
+                                                      //amdtpsSendData((uint8_t *)res_cmd, *val_len);
+                                                      break;
+                                                  case SER_RX:
+                                                      Serial.println("Got a serial message");
+                                                      pushMessage((char *)&cmd->data, cmd->length);
+                                                      break;
+                                                  case REQ_OBS:
+                                                      Serial.println("Going to send a float");
+                                                      float f;
+                                                      f = 3.1415;
+                                                      int typeSize;
+                                                      typeSize = sizeof(f);
+                                                      res_cmd->command_type = GIVE_OBS;
+                                                      for ( int i=0; i<18; i++) {
+                                                        memcpy(res_cmd->data + i*typeSize, &f, typeSize);                
+                                                      }            
+                                                      res_cmd->length = 18 * typeSize;
+                                                      amdtpsSendData((uint8_t *)res_cmd, 2 + 18 * typeSize);
+                                                      break;
+                                                  case REQ_FLOAT:
+                                                      Serial.println("Going to send a float");
+                                                      f = 3.1415;
+                                                      typeSize = sizeof(f);
+                                                      res_cmd->command_type = GIVE_FLOAT;
+                                                      memcpy(res_cmd->data, &f, typeSize);                           
+                                                      res_cmd->length = typeSize;
+                                                      amdtpsSendData((uint8_t *)res_cmd, 2 + typeSize);
+                                                      break;
+                                                  case PING:
+                                                      Serial.println("Ping Pong");
+                                                      cmd->command_type = PONG;
+                                                      amdtpsSendData(m_Rcvd, l_Rcvd);
+                                                      break;
+                                                  case START_BYTESTREAM_TX:
+                                                      bytestream_active = (int)cmd->data[0];
+                                                      //Serial.printf("Start bytestream with active %d \n", bytestream_active);
+                                                      ((uint32_t *)res_cmd->data)[0] = 0;
+                                                      break;
+                                                  case STOP_BYTESTREAM_TX:
+                                                      bytestream_active = 0;
+                                                      break;
+                                                  default:
+                                                      Serial.printf("Unsupported Command 0x%x \n", cmd->command_type);
+                                                      break;
+                                                  }
+                                          
+                                                  l_Rcvd = 0;
+                                                  am_hal_wdt_restart();
+                                                  free(m_Rcvd);
+                                              } //End if s_Rcvd != 100
+                                              else if ((s_Rcvd[0] == '6' && s_Rcvd[1] == '7'))
+                                              {
+                                                  s_Rcvd[0] = 0;
+                                                  digitalWrite(LED_BUILTIN, HIGH);
+                                                  //Serial.printf("Connected, length was %d", l_Rcvd);
+                                              }
+                                              else if ((s_Rcvd[0] == '6' && s_Rcvd[1] == '8'))
+                                              {
+                                                  digitalWrite(LED_BUILTIN, LOW);
+                                                  Serial.println("disconnected");
+                                                  //Decimal value of D for Disconnect
+                                                  //Serial.println("got disconnect from case in ino file - set_Stop");
+                                                  digitalWrite(LED_BUILTIN, LOW);
+                                                  //amdtps_conn_close();
+                                                  DmDevReset();
+                                              }
+                                          
+                                              if (availableMessage())
+                                              {
+                                                  Serial.println("Bluetooth Message:");
+                                                  Serial.println(pullMessage());
+                                                  printOverBluetooth("Message Received.");
+                                              }
+                                          
+                                              if (bytestream_active)
+                                              {
+                                                  // streamcount(4 bytes) = # of packets sent from Arduino side
+                                                  // timelapsed(8 bytes) = amount of time between packets
+                                                  if (streamcount == 0){
+                                                    timeprev = micros();
+                                                  }
+                                                  res_cmd->command_type = BYTESTREAM_TX;        
+                                                  res_cmd->length = sizeof(streamcount)+sizeof(timelapsed); 
+                                                  //Serial.printf("Count %d \n", streamcount);           
+                                                  //Serial.printf("packet data length %d \n", res_cmd->length);           
+                                                  memcpy(res_cmd->data, &streamcount, sizeof(streamcount));                 
+                                                  memcpy(res_cmd->data + sizeof(streamcount), &timelapsed, sizeof(timelapsed)); 
+                                          
+                                                  amdtpsSendData((uint8_t *)res_cmd, 2+sizeof(streamcount)+sizeof(timelapsed));
+                                                  timecurrent = micros();
+                                                  timelapsed = timecurrent - timeprev;
+                                                  timeprev = timecurrent;
+                                                  Serial.printf("Time lapsed %d \n", timelapsed);
+                                                  Serial.printf("Stream %d %d \n", streamcount, timelapsed);
+                                                  streamcount++;
+                                              }
+                                              trigger_timers();
+                                          
+                                              // Disable interrupts.
+                                              delay(10);
+                                          
+                                          }
+                                    </code></pre>
+                                    <p>
+                                        I also had multiple if statements in both my Arduino and python scripts to coordinate what actions to run. 
+                                    </p>
+                                    <p>In my Arduino code, I had:</p>
+                                    <pre><code>
+                                            if (enable_PID){
+  
+                                                if (step == 0 ) moveStep(0,300,200);
+                                                if (step == 1 ) takeBreak(2000);
+                                                if (step == 2 ) {
+                                                  runPIDLoop(170, 0.425, 0.0017, 0.085, true);
+                                                  runPIDLoop(170, 0.425, 0.0017, 0.085, false);
+                                                }
+                                                if (step == 3 ) moveStep(0,300,200);
+                                                if (step == 4 ) takeBreak(2000);
+                                                if (step == 5 ) {
+                                                  runPIDLoop(170, 0.425, 0.0017, 0.085, true);
+                                                  runPIDLoop(170, 0.425, 0.0017, 0.085, false);
+                                                }
+                                              
+                                              }
+                                    </code></pre>
                                     <p>Also, I have to note that I've been having to use an old bike light as something to fully discharge my batteries when I'm not using them, and before 
                                         I charge them again. This seems to improve the battery life since I think my battery life kept getting shorter and shorter if I didn't fully 
                                         discharge it from time to time. 
