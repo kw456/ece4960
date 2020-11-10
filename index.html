@@ -3433,7 +3433,8 @@
                                     <p>As mentioned above, I was able to use my extension day to work on the Bluetooth module and continue getting it to work.
                                          I was really on the strugglebus for a while since I found that I had to keep reconnecting my Bluetooth module in my VM (since apparently it had 
                                          difficult staying recognized by the VM for a long time?), and I ended up 
-                                        restarting my VM many times throughout this lab when things weren't working (which was sadly a lot of the time, yikes). I think I've gotten 
+                                        restarting my VM many times throughout this lab when things weren't working (which was sadly a lot of the time, yikes). I also had to spend 
+                                        a decent amount of time trying to get everything to work in Jupyter notebook and with the asynchronous functions. I think I've gotten 
                                         to the point where I can send data from my TOF sensor and send it to the localization ipynb script over Bluetooth. </p>
                                     <p>In terms of getting the BLuetooth module to work, I had to revise some of my functions and code to utilize it. I turned my 90 data points from my 360 degree scan
                                         into 18 data points in my Arduino script instead of using numpy (because I didn't want to send extra points that I didn't need over Bluetooth). </p>
@@ -3454,7 +3455,8 @@
                                                 }
                                             }
                                     </code></pre>
-                                    <p> Additionally, I had to start my Bluetooth module at the start of the loop function in my Arduino code by calling my BT() function:</P>
+                                    <p> Additionally, I had to start my Bluetooth module at the start of the loop function in my Arduino code by calling my BT() function. I haven't 
+                                        finished the SEt_MOTORS and GET_MOTORS functions yet because I didn't have enough time, but I'll get those working for Lab 10 hopefully. :</P>
                                     <pre><code>
                                             void BT() {
                                                 if (l_Rcvd > 1) //Check if we have a new message from amdtps_main.c through BLE_example_funcs.cpp
@@ -3575,8 +3577,7 @@
                                     </code></pre>
                                     <p>
                                         I also had multiple if statements in both my Arduino and python scripts to coordinate what actions to run. 
-                                    </p>
-                                    <p>In my Arduino code, I had:</p>
+                                        In my Arduino code, I had if statements for moving, pausing, and running my 360 degree scan. </p>
                                     <pre><code>
                                             if (enable_PID){
   
@@ -3597,7 +3598,8 @@
                                     </code></pre>
                                     <p>Also, I have to note that I've been having to use an old bike light as something to fully discharge my batteries when I'm not using them, and before 
                                         I charge them again. This seems to improve the battery life since I think my battery life kept getting shorter and shorter if I didn't fully 
-                                        discharge it from time to time. 
+                                        discharge it from time to time. The battery life is still not great though, obviously, so I've just been trying not to mess up too much 
+                                        with my physical robot and praying to the battery gods that my battery will charge faster.  
                                     </p>
                                     <ul class="list-inline">
                                         <li>Date: 11/7/20 </li>
