@@ -3924,7 +3924,7 @@
                                     </p>
                                     <p>I found that even with closed loop control, the robot is not the most controlled and I couldn't precisely control the turning angle or travel distance. 
                                         Therefore, I felt any really advanced or complicated search algorithms might not be the most helpful since the robot wouldn't be able to 
-                                        execute it that well. Therefore, I went with a pretty navigation algorithm. 
+                                        execute it that well. Therefore, I went with a pretty simple navigation algorithm. 
                                     </p>
                                     <img class="img-fluid d-block mx-auto" src="assets/img/lab10/IMG_1296.jpg" alt="" />
                                     <p>
@@ -3950,9 +3950,73 @@ I didn't go with a more complicated algorithm as well because I think the robot 
 if I was just doing the simulation, I would use A*, but since I was doing this on a physical robot, I needed to compensate for the lack of accuracy in navigation (especially considering 
 offset turning angles, offset distances, varying battery levels, etc.)
                                     </p>
+                                    <img class="img-fluid d-block mx-auto" src="assets/img/lab10/demo.PNG" alt="" />
+                                    <p>As shown, I forgot to mention that in Lab 9 I added in those X's to the right of the map (between my map outline and the border of outside square). These lines 
+                                       made it so that the robot would almost certainly not accidentally think it was outside of my map but within my border, because those X's made it so that the area the robot was 
+                                       not allowed in was easily recognizable through localization. 
+                                    </p>
+                                    <p>
+                                    Here is how my robot is supposed to navigate:
+                                    </p>
+                                    <pre><code>
+1. Started with a 360 degree scan with localization to figure out the robot starting point and heading angle
+2. Turned the robot to align with Y axis and started going
+3. As the robot traveled along with the Y axis, collision detection sensed an obstacle in the way and the orbot stopped in front of it.
+4. The robot aborted the original planned navigation and restarted the scanning/navigation routine again  
+5. On the stop point, the robot sensed an obstacle on Y axis before it could start the Y axis sequence. It skipped the Y axis sequence.
+6. Robot turned and aligned with the X axis and continued to travel until it hit another obstacle. With collision detection happening, it restarted the scanning/navigation routine again. 
+7. There are no obstacle along the way, and it finally reached the destination.
+
+                                    </code></pre>
+                                    <p>
+                                        In reality, due to the turning angle and travel distance errors, 
+                                        the robot can take additional sequences to finally reach the destination. 
+                                        Even though the algorithm is pretty dumb, it seems to be reliable in my room, 
+                                        and my robot generally can reach the destination as long as the BT/Artemis don’t crash during the navigation.
+
+                                    </p>
+                                    <p>
+                                        I also usually performed a calibration routine before navigating to figure out the optimal motor level (each of my batteries need different settings 
+                                        in order to perform tuning more accurately)
+                                    </p>
+                                    <p>Here's the navigation sequence code:</p>
+                                    <pre><code>
+forwardSpeed = 150
+ccTurnSpeed = 150
+cTurnSpeed = 180
+end = (15,6)
+
+obsData = await scanRoom(ccTurnSpeed)
+
+gridPos, myPos = localization(obsData)
+
+start = (gridPos[0],gridPos[1],gridPos[2])
+plotStartEndPosition(myPos,end)
+
+while abs(gridPos[0]-end[0]) > 2 or abs(gridPos[1]-end[1]) > 2 or abs(gridPos[0]-end[0])+abs(gridPos[1]-end[1]) > 3: 
+    await navigate(start,end,forwardSpeed,ccTurnSpeed ,cTurnSpeed )
+    obsData = await scanRoom(ccTurnSpeed)
+    gridPos, myPos = localization(obsData)
+    start = (gridPos[0],gridPos[1],gridPos[2])
+    plotStartEndPosition(myPos,end)
+
+print("******** REACH the target*******")
+
+                                    </code></pre>
+                                    <p>Here is a video of Navigation Trial 1:</p>
+                                    <iframe src="  https://youtube.com/embed/1rS4APfozVc"
+                                    width="560" height="315" frameborder="0" allowfullscreen></iframe> 
+                                    <iframe src="  https://youtube.com/embed/PwRzasbtsMM"
+                                    width="560" height="315" frameborder="0" allowfullscreen></iframe> 
+                                    <iframe src="  https://youtube.com/embed/nQqIe7xUq2I"
+                                    width="560" height="315" frameborder="0" allowfullscreen></iframe> 
+                                    <iframe src="  https://youtube.com/embed/PwRzasbtsMM"
+                                    width="560" height="315" frameborder="0" allowfullscreen></iframe> 
+                                   
                                     <ul class="list-inline">
-                                        <li>Date: </li>
+                                        <li>Date: 11/24/20</li>
                                     </ul>
+                                    <p></p>
                                     <button class="btn btn-primary" data-dismiss="modal" type="button">
                                         <i class="fas fa-times mr-1"></i>
                                         Close Project
