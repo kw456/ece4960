@@ -4268,7 +4268,7 @@ void loop()
                                     
                                     <p><b><font size = "+2">Navigation with unknown start and known end locations</font></b></p>
                                     <p>As the previous A* algo. navigation results showed, using the A* algorithm alone can get the robot pretty close to the target. 
-                                        However, the probability of reaching the <b>precise and exact</b>target location is fairly low. Since I had the scanning/localization code from Lab9, I added it to my navigation algorithm. 
+                                        However, the probability of reaching the <b>precise and exact</b> target location is fairly low. Since I had the scanning/localization code from Lab9, I added it to my navigation algorithm. 
                                         Here is how it works:
                                         </p>
 <pre>
@@ -4302,7 +4302,7 @@ void loop()
                 obsTurnSpeed = 130
 </pre>
                                     <p>Here is the navigation code:</p>
-                                    <p>
+                                    <pre>
                                             gmap = getMap()
                                             goal_node = (14,7)
                                             
@@ -4328,11 +4328,99 @@ void loop()
                                                 gmap.plot()
                                                 plot_path(path_px)
                                             print("******** Arrived at Target *******")                                            
-                                    </p>
+                                    </pre>
                                     <p><b>Here are three more examples:</b></p>
                                     <p>Extra Example 1:</p>
-<pre></pre>
+<pre>
+Start: Unknown
+End: (8, 14)
+---------- UPDATE STATS -----------
+Bel index     :  (7, 6, 13) with prob =  1.0
+Bel_bar prob at index =  0.0001388888888888889
+Belief   : (-0.500, -0.700, 90.000)
+---------- UPDATE STATS -----------
+robot start position ( -0.4999999999999999 -0.6999999999999998 )
+Robot Start Angle: 90.0
+</pre>
+<img class="img-fluid d-block mx-auto" src="assets/img/lab10/freestyle1.PNG" alt="" />
+<pre>
+--- A* navigation ---
+turning: -270.0
+x  axis step: -4  to  (3, 6)
+turning: 270
+y  axis step: 8  to  (3, 14)
 
+--- Robot instruction ---
+('turn', '130,-270.0,')
+('forward', '130,800,')
+('turn', '110,270,')
+('forward', '130,1600,')
+
+******** sequence done *******
+
+---------- UPDATE STATS -----------
+Bel index     :  (2, 14, 13) with prob =  1.0
+Bel_bar prob at index =  0.0001388888888888889
+Belief   : (-1.500, 0.900, 90.000)
+---------- UPDATE STATS -----------
+robot start position ( -1.5 0.9000000000000002 )
+Robot Start Angle: 90.0
+******** Arrived at Target *******
+</pre>
+<img class="img-fluid d-block mx-auto" src="assets/img/lab10/freestyle1_.PNG" alt="" />
+                                    
+
+<p>Extra Example 2:</p>
+<pre>
+Start: Unknown
+End: (14, 7)
+
+---------- UPDATE STATS -----------
+Bel index     :  (3, 10, 13) with prob =  1.0
+Bel_bar prob at index =  0.0001388888888888889
+Belief   : (-1.300, 0.100, 90.000)
+---------- UPDATE STATS -----------
+robot start position ( -1.2999999999999998 0.1 )
+Robot Start Angle: 90.0   
+</pre>
+<img class="img-fluid d-block mx-auto" src="assets/img/lab10/freestyle2.PNG" alt="" />
+<pre>
+--- A* navigation ---
+turning: -180.0
+y  axis step: -4  to  (3, 6)
+turning: 90
+x  axis step: 4  to  (7, 6)
+turning: 90
+y  axis step: 1  to  (7, 7)
+turning: -90
+x  axis step: 7  to  (14, 7)
+
+--- Robot instruction ---
+('turn', '130,-180.0,')
+('forward', '130,800,')
+('turn', '110,90,')
+('forward', '130,800,')
+('turn', '110,90,')
+('forward', '130,200,')
+('turn', '130,-90,')
+('forward', '130,1400,')
+COLLISION1326.00
+COLLISION - STOP the navigation
+******** sequence done *******
+
+---------- UPDATE STATS -----------
+Bel index     :  (13, 9, 10) with prob =  0.9999999
+Bel_bar prob at index =  0.0001388888888888889
+Belief   : (0.700, -0.100, 30.000)
+---------- UPDATE STATS -----------
+robot start position ( 0.7000000000000001 -0.09999999999999995 )
+Robot Start Angle: 30.0
+
+******** Arrived at Target *******
+</pre>
+<img class="img-fluid d-block mx-auto" src="assets/img/lab10/freestyle2_.PNG" alt="" />
+
+<p>Extra Example 3:</p>
 
 
                                     <iframe src="  https://youtube.com/embed/1rS4APfozVc"
