@@ -3631,47 +3631,67 @@
                                     <!-- Project Details Go Here-->
                                     <h2 class="text-uppercase">Lab 10</h2>
                                     <p class="item-intro text-muted">Planning</p>
-                                    <p> To start the implementation, functions for robot control had to be written. Although I already had localization from the previous lab to pinpoint the robot's location, 
+                                    <p> To start the implementation, functions for controling the robot as precisely as possible had to be written. Although I already had localization from the previous lab to pinpoint the robot's location, 
                                         I needed to be able to physically navigate along a path with my robot. 
                                     </p>
-                                    <p> To move the robot in a straight line, I had functions for the motor speeds of both motors:</p>
+                                    <p> To move the robot in a straight line, I had functions for the motor speeds of both motors, calibrating it to compensate for :</p>
                                     <pre><code>
-                                        myMotorDriver.setDrive( 0, 1, power); 
-    	                                myMotorDriver.setDrive( 1, 1, power*_adjustPercent);  
+const float _adjustPercent= 1.0630;
+myMotorDriver.setDrive( 0, 1, power); 
+myMotorDriver.setDrive( 1, 1, power*_adjustPercent);                                      
                                     </code></pre>
                                     <p>The TOF sensor was used to measure how far the robot traveled. I wanted my robot to stop at a desired distance, so I had to add in a 
                                         brake distance adjustment value in order to try to compensate for the braking distance of the robot. Also, I had some "collision detection" 
                                         functions to send notifications back to the ipynb navigation program when a collision occurred or the robot was too close to the wall: 
                                     </p>
-                                    <pre><code>
-                                        float forwardDistance(int power, int distance){
-                                            float preD = getDistance();
-                                            Serial.println(preD);
-                                            float brakeDistRate = 0.4;
-                                            int minWallDist = 200;
-                                            int CollisionDist = 60;
-                                            float brakeDistRate = 0.4;
-                                          
-                                            if (preD < CollisionDist) {
-                                              sendBTMessage("SKIP");
-                                              return preD;
-                                            }
-                                            while ((abs(preD - getDistance()) < distance * (1-brakeDistRate)) && (getDistance() > minWallDist)){
-                                              myMotorDriver.setDrive( 0, 1, power); 
-                                              myMotorDriver.setDrive( 1, 1, power*_adjustPercent);    
-                                              delay(5);
-                                            }
-                                          
-                                            motorStop();
-                                            delay(200);
-                                            if (getDistance() < CollisionDist) {
-                                              sendBTMessage("COLLISION");
-                                            } else if (getDistance() < minWallDist){
-                                              sendBTMessage("TOO_CLOSE_TO_WALL");
-                                            } else {
-                                              sendBTMessage("");
-                                            }                                          
-                                    </code></pre>
+<pre><code>
+    float forwardDistance(int power, int distance){
+        float preD = getDistance();
+        
+        int minWallDist = 200;
+        int CollisionDist = 60;
+        float brakeDistRate = 0.2;
+      
+        if (preD < CollisionDist) {
+          sendBTMessage("SKIP");
+          return 0;
+        }
+        
+        while ((abs(preD - getDistance()) < abs(distance) * (1-brakeDistRate)) && (getDistance() > minWallDist)){
+          if (distance > 0){
+            myMotorDriver.setDrive( 0, 1, power); 
+            myMotorDriver.setDrive( 1, 1, power*_adjustPercent);          
+          } else {
+            myMotorDriver.setDrive( 0, 0, power); 
+            myMotorDriver.setDrive( 1, 0, power*_adjustPercent);         
+          }
+          delay(5);
+        }
+      
+      //brake the vehicle
+        motorStop();
+        if (distance < 0){
+          myMotorDriver.setDrive( 0, 1, power); 
+          myMotorDriver.setDrive( 1, 1, power*_adjustPercent);   
+          delay(150);       
+        } else {
+          myMotorDriver.setDrive( 0, 0, power); 
+          myMotorDriver.setDrive( 1, 0, power*_adjustPercent);
+          delay(150);    
+        }
+        motorStop();
+        
+        String tDist = String(abs(preD - getDistance()));  
+        if (getDistance() < CollisionDist) {
+          sendBTMessage("COLLISION" + tDist);
+        } else if (getDistance() < minWallDist){
+          sendBTMessage("TOO_CLOSE_TO_WALL"  + tDist);
+        } else {
+          sendBTMessage(tDist);
+        }
+            
+      }                               
+</code></pre>
                                     <p>
                                         For turning, I was originally planning on using the PID code from previous labs. However, after adding in Bluetooth control in the Arduino loop, 
                                         you had to change the values of the parameters in the PID loop and unfortunately, they didn't seem to stabilize after trying to tune them. Also, 
@@ -3679,235 +3699,377 @@
                                         gyro to measure the angle and keeping the control content in the Arduino loop). I also accounted for the braking distance to try minimizing 
                                         overshoot. 
                                     </p>
+                                    <p>
+                                        Here is the turning function:
+                                    </p>
+<pre><code>
+    void runTURNCCLoop(){
+        static int cycleCT = 0;
+      
+        if( myICM.dataReady() ){ 
+          if ( rotateCount < 1 ){
+            if (turnAngle < 0) {
+              turnClockwise(turnSpeed);
+            } else {
+              turnCounterClockwise(turnSpeed);
+            }
+             myICM.getAGMT();
+             printData(turnSpeed, cycleCT, turnAngle);
+             cycleCT++;
+          } else {
+            motorStop();
+            if (turnAngle < 0) {
+              myMotorDriver.setDrive( 0, 0, turnSpeed); 
+              myMotorDriver.setDrive( 1, 1, turnSpeed);   
+              delay(110);
+            }
+            else {
+              myMotorDriver.setDrive( 0, 1, turnSpeed); 
+              myMotorDriver.setDrive( 1, 0, turnSpeed);   
+              delay(200);        
+            }      
+            motorStop();
+            if (enable_TURNCC) {
+              Serial.println(cycleCT);
+              cycleCT = 0;
+              enable_TURNCC = false;
+            }     
+          }
+        }
+    }
+</code></pre>
+                                    <p>Here is the Arduino loop function:</p>
+<pre><code>
+void loop()
+{
+  BT();
+  if (enable_OBS) runOBSLoop();
+  if (enable_TURNCC) runTURNCCLoop();
+}
+</code></pre>
+                                    <p>I first had the Bluetooth function below:</p>
+<pre><code>
+    void BT() {
+        if (l_Rcvd > 1) //Check if we have a new message from amdtps_main.c through BLE_example_funcs.cpp
+      {
+  
+          cmd = (cmd_t *)m_Rcvd;
+          switch (cmd->command_type)
+          {
+          case SET_MOTORS:
+              {
+                char * token ;  
+                int arg[4];
+                int x = 0;
+                Serial.println("Placeholder: Set Motors");
+                Serial.println((char *)&cmd->data);             
+                token = strtok((char *)&cmd->data, ",");
+                while( token != NULL ) {
+                  arg[x]= atoi(token);
+  //                Serial.println(arg[x])
+                  token = strtok(NULL, ",");
+                  x++;
+                }
+                _pwrLevel = arg[3];
+                moveStep(arg[0],arg[1],arg[2]);
+  
+              }
+              break;
+          case GET_MOTORS:
+              Serial.println("Placeholder: Set Motors");
+              //amdtpsSendData((uint8_t *)res_cmd, *val_len);
+              break;
+          case SER_RX:
+              Serial.println("Got a serial message");
+              pushMessage((char *)&cmd->data, cmd->length);
+              break;
+          case REQ_OBS:
+              {
+                Serial.println((char *)&cmd->data);  
+                turnSpeed = atoi(strtok((char *)&cmd->data, ","));   
+                turnAngle = 345;        
+                Serial.println(turnSpeed);  
+                rotateCount = 0;
+                myYaw = 0;
+                enable_OBS = true;
+                Serial.println("Going to run 360 observation");
+              }
+              break;
+          case REQ_TURN:
+              {
+                char * token ;  
+                int arg[2];
+                int x = 0;
+                Serial.println((char *)&cmd->data);             
+                token = strtok((char *)&cmd->data, ",");
+                while( token != NULL ) {
+                  arg[x]= atoi(token);
+                  token = strtok(NULL, ",");
+                  x++;
+                }
+                rotateCount = 0;
+                myYaw = 0;
+                turnSpeed = arg[0];
+                turnAngle = arg[1];
+                Serial.println(turnAngle);
+                enable_TURNCC = true;
+              }
+              break;
+          case REQ_FORWARD:
+              {
+                char * token ;  
+                int arg[2];
+                int x = 0;
+                Serial.println((char *)&cmd->data);      
+                token = strtok((char *)&cmd->data, ",");
+                while( token != NULL ) {
+                  arg[x]= atoi(token);
+                  token = strtok(NULL, ",");
+                  x++;
+                }
+                Serial.println("Going forwad at distance");
+                forwardDistance(arg[0],arg[1]);
+              }
+              break;            
+          case REQ_FLOAT:
+              {
+                Serial.println("Going to send a float");
+                float f = 3.1415;
+                int typeSize = sizeof(f);
+                res_cmd->command_type = GIVE_FLOAT;
+                memcpy(res_cmd->data, &f, typeSize);                           
+                res_cmd->length = typeSize;
+                amdtpsSendData((uint8_t *)res_cmd, 2 + typeSize);
+              }
+              break;
+          case PING:
+              Serial.println("Ping Pong");
+              cmd->command_type = PONG;
+              amdtpsSendData(m_Rcvd, l_Rcvd);
+              break;
+          case START_BYTESTREAM_TX:
+              bytestream_active = (int)cmd->data[0];
+              //Serial.printf("Start bytestream with active %d \n", bytestream_active);
+              ((uint32_t *)res_cmd->data)[0] = 0;
+              break;
+          case STOP_BYTESTREAM_TX:
+              bytestream_active = 0;
+              break;
+          default:
+              Serial.printf("Unsupported Command 0x%x \n", cmd->command_type);
+              break;
+          }
+  
+          l_Rcvd = 0;
+          am_hal_wdt_restart();
+          free(m_Rcvd);
+      } //End if s_Rcvd != 100
+      else if ((s_Rcvd[0] == '6' && s_Rcvd[1] == '7'))
+      {
+          s_Rcvd[0] = 0;
+          digitalWrite(LED_BUILTIN, HIGH);
+          //Serial.printf("Connected, length was %d", l_Rcvd);
+      }
+      else if ((s_Rcvd[0] == '6' && s_Rcvd[1] == '8'))
+      {
+          digitalWrite(LED_BUILTIN, LOW);
+          Serial.println("disconnected");
+          //Decimal value of D for Disconnect
+          //Serial.println("got disconnect from case in ino file - set_Stop");
+          digitalWrite(LED_BUILTIN, LOW);
+          //amdtps_conn_close();
+          DmDevReset();
+      }
+  
+      if (availableMessage())
+      {
+          Serial.println("Bluetooth Message:");
+          Serial.println(pullMessage());
+          printOverBluetooth("Message Received.");
+      }
+  
+      if (bytestream_active)
+      {
+          // streamcount(4 bytes) = # of packets sent from Arduino side
+          // timelapsed(8 bytes) = amount of time between packets
+          if (streamcount == 0){
+            timeprev = micros();
+          }
+          res_cmd->command_type = BYTESTREAM_TX;        
+          res_cmd->length = sizeof(streamcount)+sizeof(timelapsed); 
+          //Serial.printf("Count %d \n", streamcount);           
+          //Serial.printf("packet data length %d \n", res_cmd->length);           
+          memcpy(res_cmd->data, &streamcount, sizeof(streamcount));                 
+          memcpy(res_cmd->data + sizeof(streamcount), &timelapsed, sizeof(timelapsed)); 
+  
+          amdtpsSendData((uint8_t *)res_cmd, 2+sizeof(streamcount)+sizeof(timelapsed));
+          timecurrent = micros();
+          timelapsed = timecurrent - timeprev;
+          timeprev = timecurrent;
+          Serial.printf("Time lapsed %d \n", timelapsed);
+          Serial.printf("Stream %d %d \n", streamcount, timelapsed);
+          streamcount++;
+      }
+      trigger_timers();
+      delay(10);
+  
+  }
+</code></pre>
+                                    <p>I then had my turning function:</p>
+<pre><code>
+    void runTURNCCLoop(){
+        static int cycleCT = 0;
+      
+        if( myICM.dataReady() ){ 
+          if ( rotateCount < 1 ){
+            if (turnAngle < 0) {
+              turnClockwise(turnSpeed);
+            } else {
+              turnCounterClockwise(turnSpeed);
+            }
+             myICM.getAGMT();
+             printData(turnSpeed, cycleCT, turnAngle);
+             cycleCT++;
+          } else {
+            motorStop();
+            if (turnAngle < 0) {
+              myMotorDriver.setDrive( 0, 0, turnSpeed); 
+              myMotorDriver.setDrive( 1, 1, turnSpeed);   
+              delay(110);
+            }
+            else {
+              myMotorDriver.setDrive( 0, 1, turnSpeed); 
+              myMotorDriver.setDrive( 1, 0, turnSpeed);   
+              delay(200);        
+            }      
+            motorStop();
+            if (enable_TURNCC) {
+              Serial.println(cycleCT);
+              cycleCT = 0;
+              enable_TURNCC = false;
+            }     
+          }
+        }
+             }
+</code>
+</pre>
+                                    <p>My loop for doing the 360 degree scan needed for localization is shown below:</p>
+<pre><code>
+    void runOBSLoop(){
+        static int cycleCT = 0;
+      
+        if( myICM.dataReady() ){
+          if ( startingYaw_m == 0 ){
+            myICM.getAGMT();
+            float yaw_m =  atan2(myICM.magY(), myICM.magX())*180/M_PI;
+            if (yaw_m < 0.0 ) yaw_m = 360 + yaw_m;
+            startingYaw_m = yaw_m;
+          }      
+          if ( rotateCount < 1 ){      
+             //** use fix number instead of PID control
+             turnCounterClockwise(turnSpeed);
+             myICM.getAGMT();
+             printData(turnSpeed, cycleCT, turnAngle);
+             cycleCT++;
+      
+          } else {
+            //brake
+            motorStop();
+      //      delay(50);
+            myMotorDriver.setDrive( 0, 1, turnSpeed); 
+            myMotorDriver.setDrive( 1, 0, turnSpeed);
+            delay(200);
+            motorStop();
+            if (enable_OBS) {
+              Serial.println(cycleCT);
+              enable_OBS = false;
+              pairDown(cycleCT);
+              cycleCT = 0;
+              // BT transmission
+      //          Serial.println("Going to send pared down values");
+              float f;
+      //        f = 3.1415;
+              int typeSize;
+              typeSize = sizeof(f);
+              res_cmd->command_type = GIVE_OBS;
+              for ( int i=0; i<18; i++) {
+                f = dsScanDist[i];
+                memcpy(res_cmd->data + i*typeSize, &f, typeSize);                
+              }            
+              res_cmd->length = 18 * typeSize;
+              amdtpsSendData((uint8_t *)res_cmd, 2 + 18 * typeSize);
+      
+            }   
+      
+        
+          }
+        }
+      }
+</code></pre>
+                                    <p>In terms of pairing down my values from my 360 degree scan, I did this in my Arduino code at approximately
+                                        20 degree increments. 
+                                    </p>
+<pre><code>
+    void pairDown(int cycleCT){
+    
+        int lastIdx = -1;
+        for ( int i=0; i<18; i++){
+          int stopPoint = i * 20; 
+          for ( int j = lastIdx +1 ; j<cycleCT; j++){
+            if ( scanYaw[j] > stopPoint){
+              dsScanYaw[i] = scanYaw[j];
+              dsScanDist[i] = scanDist[j];
+              lastIdx = j;
+              break;      
+            } 
+          }  
+        }
+    }
+    
+</code></pre>
+                                    <p><b><font size = "+2">Bluetooth commands </font></b></p>
+                                    <p>To add on to Lab 9 (aka stuff I probably should have included in the last lab writeup), 
+                                        I finalized the code for my Bluetooth commands with the following commands:</p>
                                     <pre><code>
-                                        float brakeAdjust = (motorLevel/150) * 17;
-
-                                        myGyroZ = myICM.gyrZ();    
-                                        float dt = (millis()-last_time)/1000.;
-                                        if (dt > 0.1) dt = 0.04;
-                                        last_time = millis();    
-                                        if (turnAngle < 0){
-                                          myYaw += - myGyroZ*dt;
-                                        } else {
-                                          myYaw += + myGyroZ*dt;
-                                        }
-                                        if (abs(myYaw) > abs(stopAngle)-brakeAdjust) {
-                                          myYaw = 0;
-                                          rotateCount++;
-                                        }                                    
-                                    </code></pre>
-                                    <p>I used this to perform the 360 degree room scan the robot needs to do localization, pairing these down to 18 data points.</p>
-                                    <pre><code>
-                                        void pairDown(int cycleCT){
-                                            int lastIdx = -1;
-                                            for ( int i=0; i<18; i++){
-                                              int stopPoint = i * 20; 
-                                              for ( int j = lastIdx +1 ; j<cycleCT; j++){
-                                                if ( scanYaw[j] > stopPoint){
-                                                  dsScanYaw[i] = scanYaw[j];
-                                                  dsScanDist[i] = scanDist[j];
-                                                  lastIdx = j;
-                                                  break;      
-                                                } 
-                                              }  
-                                            }
-                                        }
-                                    </code></pre>
-                                    <p>As kind of a continuation of Lab 9, I finalized the code for my Bluetooth commands by adding in the following bluetooth commands:</p>
-                                    <pre><code>
-                                        REQ_OBS (motorLevel) - Async request forthe  Arduino to perform 360 degree scan and pair down the value to 18 data points
+                                        REQ_OBS (motorLevel) - Async request for the  Arduino to perform a 360 degree scan and pair down the values to 18 data points
                                         GIVE_OBS - Async event from Arduino when scan is completed and the 18 data values are transmitted back 
                                         REQ_TURN (motorLevel, degree to turn) - Async request for Arduino to turn the vehicle to the desired angle. Positive number will turn vehicle CCW, negative number will turn clockwise 
                                         REQ_FORWARD (motorLevel, distance(mm)) - Request Arduino to drive forward and stop at the distance
                                         GIVE_MSG - Asyncio event from Arduino to send messages to PC. 
                                     </code></pre>
                                     <p>Shoutout to Alex for those very helpful videos. However, I still found that at the beginning of getting the Bluetooth to work, it crashed all the time, and I 
-                                        found that the PID oscillation was causing the issue. The BT stabilized much more once I removed PID control (which is a little weird but eliminated a lot of the issues 
-                                        I was having with the BT)
+                                        found that the PID oscillation was causing the issue since it hadn't really shown up in the last lab. The BT stabilized much more once I removed PID control (which is a little weird but eliminated a lot of the issues 
+                                        I was having with the BT).
                                     </p>
-                                    <pre><code>
-                                        void BT() {
-                                            if (l_Rcvd > 1) //Check if we have a new message from amdtps_main.c through BLE_example_funcs.cpp
-                                          {
-                                              cmd = (cmd_t *)m_Rcvd;
-                                              switch (cmd->command_type)
-                                              {
-                                              case SET_MOTORS:
-                                                  {
-                                                    char * token ;  
-                                                    int arg[4];
-                                                    int x = 0;
-                                                    Serial.println("Placeholder: Set Motors");
-                                                    Serial.println((char *)&cmd->data);             
-                                                    token = strtok((char *)&cmd->data, ",");
-                                                    while( token != NULL ) {
-                                                      arg[x]= atoi(token);
-                                      //                Serial.println(arg[x])
-                                                      token = strtok(NULL, ",");
-                                                      x++;
-                                                    }
-                                                    _pwrLevel = arg[3];
-                                                    moveStep(arg[0],arg[1],arg[2]);
-                                                  }
-                                                  break;
-                                              case GET_MOTORS:
-                                                  Serial.println("Placeholder: Set Motors");
-                                                  //amdtpsSendData((uint8_t *)res_cmd, *val_len);
-                                                  break;
-                                              case SER_RX:
-                                                  Serial.println("Got a serial message");
-                                                  pushMessage((char *)&cmd->data, cmd->length);
-                                                  break;
-                                              case REQ_OBS:
-                                                  {
-                                                    Serial.println((char *)&cmd->data);  
-                                                    turnSpeed = atoi(strtok((char *)&cmd->data, ","));   
-                                                    turnAngle = 360;        
-                                                    Serial.println(turnSpeed);  
-                                                    rotateCount = 0;
-                                                    myYaw = 0;
-                                                    enable_OBS = true;
-                                                    Serial.println("Going to run 360 observation");
-                                                  }
-                                                  break;
-                                              case REQ_TURN:
-                                                  {
-                                                    char * token ;  
-                                                    int arg[2];
-                                                    int x = 0;
-                                                    Serial.println((char *)&cmd->data);             
-                                                    token = strtok((char *)&cmd->data, ",");
-                                                    while( token != NULL ) {
-                                                      arg[x]= atoi(token);
-                                                      token = strtok(NULL, ",");
-                                                      x++;
-                                                    }
-                                                    rotateCount = 0;
-                                                    myYaw = 0;
-                                                    turnSpeed = arg[0];
-                                                    turnAngle = arg[1];
-                                                    Serial.println(turnAngle);
-                                                    enable_TURNCC = true;
-                                                  }
-                                                  break;
-                                              case REQ_FORWARD:
-                                                  {
-                                                    char * token ;  
-                                                    int arg[2];
-                                                    int x = 0;
-                                                    Serial.println((char *)&cmd->data);      
-                                                    token = strtok((char *)&cmd->data, ",");
-                                                    while( token != NULL ) {
-                                                      arg[x]= atoi(token);
-                                                      token = strtok(NULL, ",");
-                                                      x++;
-                                                    }
-                                                    Serial.println("Going forwad at distance");
-                                                    forwardDistance(arg[0],arg[1]);
-                                                  }
-                                                  break;            
-                                              case REQ_FORWARDUNTIL:
-                                                  {
-                                                    char * token ;  
-                                                    int arg[2];
-                                                    int x = 0;
-                                                    Serial.println((char *)&cmd->data);             
-                                                    token = strtok((char *)&cmd->data, ",");
-                                                    while( token != NULL ) {
-                                                      arg[x]= atoi(token);
-                                                      token = strtok(NULL, ",");
-                                                      x++;
-                                                    }
-                                                    Serial.println("Going forwad at distance");
-                                                    forwardUntil(arg[0],arg[1]);
-                                                  }
-                                                  break;   
-                                              case REQ_FLOAT:
-                                                  {
-                                                    Serial.println("Going to send a float");
-                                                    float f = 3.1415;
-                                                    int typeSize = sizeof(f);
-                                                    res_cmd->command_type = GIVE_FLOAT;
-                                                    memcpy(res_cmd->data, &f, typeSize);                           
-                                                    res_cmd->length = typeSize;
-                                                    amdtpsSendData((uint8_t *)res_cmd, 2 + typeSize);
-                                                  }
-                                                  break;
-                                              case PING:
-                                                  Serial.println("Ping Pong");
-                                                  cmd->command_type = PONG;
-                                                  amdtpsSendData(m_Rcvd, l_Rcvd);
-                                                  break;
-                                              case START_BYTESTREAM_TX:
-                                                  bytestream_active = (int)cmd->data[0];
-                                                  //Serial.printf("Start bytestream with active %d \n", bytestream_active);
-                                                  ((uint32_t *)res_cmd->data)[0] = 0;
-                                                  break;
-                                              case STOP_BYTESTREAM_TX:
-                                                  bytestream_active = 0;
-                                                  break;
-                                              default:
-                                                  Serial.printf("Unsupported Command 0x%x \n", cmd->command_type);
-                                                  break;
-                                              }
-                                      
-                                              l_Rcvd = 0;
-                                              am_hal_wdt_restart();
-                                              free(m_Rcvd);
-                                          } //End if s_Rcvd != 100
-                                          else if ((s_Rcvd[0] == '6' && s_Rcvd[1] == '7'))
-                                          {
-                                              s_Rcvd[0] = 0;
-                                              digitalWrite(LED_BUILTIN, HIGH);
-                                              //Serial.printf("Connected, length was %d", l_Rcvd);
-                                          }
-                                          else if ((s_Rcvd[0] == '6' && s_Rcvd[1] == '8'))
-                                          {
-                                              digitalWrite(LED_BUILTIN, LOW);
-                                              Serial.println("disconnected");
-                                              //Decimal value of D for Disconnect
-                                              //Serial.println("got disconnect from case in ino file - set_Stop");
-                                              digitalWrite(LED_BUILTIN, LOW);
-                                              //amdtps_conn_close();
-                                              DmDevReset();
-                                          }
-                                      
-                                          if (availableMessage())
-                                          {
-                                              Serial.println("Bluetooth Message:");
-                                              Serial.println(pullMessage());
-                                              printOverBluetooth("Message Received.");
-                                          }
-                                      
-                                          if (bytestream_active)
-                                          {
-                                              // streamcount(4 bytes) = # of packets sent from Arduino side
-                                              // timelapsed(8 bytes) = amount of time between packets
-                                              if (streamcount == 0){
-                                                timeprev = micros();
-                                              }
-                                              res_cmd->command_type = BYTESTREAM_TX;        
-                                              res_cmd->length = sizeof(streamcount)+sizeof(timelapsed); 
-                                              //Serial.printf("Count %d \n", streamcount);           
-                                              //Serial.printf("packet data length %d \n", res_cmd->length);           
-                                              memcpy(res_cmd->data, &streamcount, sizeof(streamcount));                 
-                                              memcpy(res_cmd->data + sizeof(streamcount), &timelapsed, sizeof(timelapsed)); 
-                                      
-                                              amdtpsSendData((uint8_t *)res_cmd, 2+sizeof(streamcount)+sizeof(timelapsed));
-                                              timecurrent = micros();
-                                              timelapsed = timecurrent - timeprev;
-                                              timeprev = timecurrent;
-                                              Serial.printf("Time lapsed %d \n", timelapsed);
-                                              Serial.printf("Stream %d %d \n", streamcount, timelapsed);
-                                              streamcount++;
-                                          }
-                                       
-                                          trigger_timers();
-                                          delay(10);
-                                      
-                                      }                                      
-                                    </code></pre>
-                                    <p>I also had the code to send and parse the comma delimited string in the BT code:</p>
+                                    <p>Here is the code to send messages from the Arduino via BT:</p>
+<pre><code>
+        void sendBTMessage(String strM){
+            uint8_t plain[strM.length()+1];
+            strM.getBytes(plain, strM.length()+1);
+            int typeSize;
+            typeSize = sizeof(plain);
+            res_cmd->command_type = GIVE_MSG;
+            memcpy(res_cmd->data, &plain, typeSize);                
+            res_cmd->length = typeSize;
+            amdtpsSendData((uint8_t *)res_cmd, 2 + typeSize);
+        }
+</code></pre>
+                                    <p>The Python code to receive the message:</p>
+<pre><code>
+        if (code == Commands.GIVE_MSG.value):
+        theRobot.msg = data.decode("utf-8")
+</code></pre>   
+                                    <p>The Python code to send commands to my Arduino via BT and receive messages back once the command execution was done:</p>
+<pre><code>
+        theRobot = theRobotHolder.getRobot()
+
+        forwardArgs = "110,300,"
+        await theRobot.sendCommand(Commands.REQ_FORWARD, len(forwardArgs), bytearray(forwardArgs,"utf-8"))
+        await asyncio.sleep(3)
+        if theRobot.msg is not None:
+            print(theRobot.msg)        
+</code></pre>
+                                    <p>I then had the Arduino code to parse comma delimited arguments:</p>
                                     <pre><code>
                                         char * token ;  
                                         int arg[2];
@@ -3919,98 +4081,116 @@
                                           x++;
                                         }                          
                                     </code></pre>
+
+                                    <p><b><font size = "+2">Map Discretization</font></b></p>
+                                    <p>As shown, I forgot to mention that in Lab 9 I added in those X's to the right of the map (between my map outline and the border of outside square). These lines 
+                                            made it so that the robot would almost certainly not accidentally think it was outside of my map but within my border, because those X's made it so that the area the robot was 
+                                            not allowed in was easily recognizable through localization. This is my original room map:
+                                    </p>
+                                    <img class="img-fluid d-block mx-auto" src="assets/img/lab10/discretization.PNG" alt="" />
+                                    <p>I then had to translate this to an occupation matrix.</p>
+                                    <pre><code>
+        grid = [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+        1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+        1,1,1,1,1,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,
+        1,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,
+        1,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,
+        1,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,
+        1,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,
+        1,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,
+        1,1,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,
+        1,1,0,0,0,1,1,0,0,1,1,1,1,1,1,1,1,1,1,1,
+        1,1,1,0,0,1,1,0,0,0,0,0,0,0,0,0,1,1,1,1,
+        1,1,1,0,0,1,1,0,0,0,0,0,0,0,0,0,1,1,1,1,
+        1,1,0,0,0,1,1,0,0,0,0,0,0,0,0,0,1,1,1,1,
+        1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,
+        1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,
+        1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,
+        1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,
+        1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,
+        1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,
+        1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+       ]
+                                    </code></pre>
+                                    <img class="img-fluid d-block mx-auto" src="assets/img/lab10/occupation.PNG" alt="" />
+                                    <p></p>
+
+                                    <p><b><font size = "+2">Planning and Navigation</font></b></p>
                                     <p>In terms of navigation, I used the Arduino and Jupyter notebook code together. The Arduino code handled motor control functions, 
                                         turning and odometry, and collision detection. The Python code ran the navigation algorithm and localization calculations. 
                                     </p>
-                                    <p>I found that even with closed loop control, the robot is not the most controlled and I couldn't precisely control the turning angle or travel distance. 
-                                        Therefore, I felt any really advanced or complicated search algorithms might not be the most helpful since the robot wouldn't be able to 
-                                        execute it that well. Therefore, I went with a pretty simple navigation algorithm. 
+                                    <p>For planning, I used an open source A* algorithm by Richardos Drakoulis at https://github.com/richardos/occupancy-grid-a-star, where he had a Python implementation of 
+                                        the algorithm in a 2D occupancy grid map. I went with A* instead since even though it has exponential time and storage complexity, I thought the slight bit of extra 
+                                        time for computation didn't really make a different in the actually run time of the navigation run. Also, it seems to provide the best shortest route which is better 
+                                        considering the robot isn't the most accurate (since less distance that needs to be traveled hopefully means the robot will have less distance 
+                                        to become offset on), compared to algorithms like the Bug algorithms which can take longer to reach the goal. Additionally, I thought about wall following but that 
+                                        seems like it would be really hard to do considering the robot we're working with and would also be slower as well. 
                                     </p>
-                                    <img class="img-fluid d-block mx-auto" src="assets/img/lab10/IMG_1296.jpg" alt="" />
-                                    <p>
-                                        To navigate from point A (known) to point B (unknown):
+                                    <p>The open source library returns the pass-through points in the occupation map. For navigation purposes, I converted it into a sequence of turning angles and moving distances, so I 
+                                        could construct a list of instructions to send to my robot, letting my transform between the map frame and the grid frame. 
                                     </p>
-                                    <pre><code>                     
-1. At the starting point, perform a 360 degree room scan and run localization (without odometry, using the update_step only with a uniform distribution)
-2. The localization can provide the robot current starting position and the heading angle. 
-3. Robot turns at Angle1 and then travel along the Y axis with a distance of 200mm*(Ay-By), (each grid unit is 200mm wide)
-4. Robot turns at Angle2 and then travel through the X axis with a distance of 200mm*(Ax-Bx)
-
-5. For obstacles on the path, the path planning is reactive instead of proactive. 
-    - The robot has collision detection. Any obstacle along the way after the robot has moved cancels the current planned navigation routine. and then restarts the scanning/localization/navigation routine once again
-    - If the robot detects collision before it even attempts any movement, it skips the current axis sequence and moves on to the next axis sequence
-6. After the navigation routine is completed, the robot will do the scanning/localization to see if it has reached the destination. If not, it will continue the navigation sequence. 
-7. The robot will repeat the same scanning/localization/navigation sequences again and again until it finally reaches the destination
-                                    </code></pre>
-                                    <p>
-                                        
-Obviously, The navigation algorithm is pretty simple. I can certainly see it can get stuck in some scenarios. In those cases, since the robot is not turning at a precise angle, with collision detection eventually the robot can get out after multiple attempts.
-Also, in my map, localization without odometry worked most of the time. However, I did find 1 or 2 spots which can confuse the scanning/localization, and mess up the navigation, which required extra steps for the robot to correct itself.
-I didn't go with a more complicated algorithm as well because I think the robot needed to do some active adjusting instead of just following a preplanned path, since it can be hard to control even with closed loop control. I think 
-if I was just doing the simulation, I would use A*, but since I was doing this on a physical robot, I needed to compensate for the lack of accuracy in navigation (especially considering 
-offset turning angles, offset distances, varying battery levels, etc.)
-                                    </p>
-                                    <img class="img-fluid d-block mx-auto" src="assets/img/lab10/demo.PNG" alt="" />
-                                    <p>As shown, I forgot to mention that in Lab 9 I added in those X's to the right of the map (between my map outline and the border of outside square). These lines 
-                                       made it so that the robot would almost certainly not accidentally think it was outside of my map but within my border, because those X's made it so that the area the robot was 
-                                       not allowed in was easily recognizable through localization. 
-                                    </p>
-                                    <p>
-                                    Here is how my robot is supposed to navigate:
-                                    </p>
-                                    <pre><code>
-1. Started with a 360 degree scan with localization to figure out the robot starting point and heading angle
-2. Turned the robot to align with Y axis and started going
-3. As the robot traveled along with the Y axis, collision detection sensed an obstacle in the way and the orbot stopped in front of it.
-4. The robot aborted the original planned navigation and restarted the scanning/navigation routine again  
-5. On the stop point, the robot sensed an obstacle on Y axis before it could start the Y axis sequence. It skipped the Y axis sequence.
-6. Robot turned and aligned with the X axis and continued to travel until it hit another obstacle. With collision detection happening, it restarted the scanning/navigation routine again. 
-7. There are no obstacle along the way, and it finally reached the destination.
-
-                                    </code></pre>
-                                    <p>
-                                        In reality, due to the turning angle and travel distance errors, 
-                                        the robot can take additional sequences to finally reach the destination. 
-                                        Even though the algorithm is pretty dumb, it seems to be reliable in my room, 
-                                        and my robot generally can reach the destination as long as the BT/Artemis don’t crash during the navigation.
-
-                                    </p>
-                                    <p>
-                                        I also usually performed a calibration routine before navigating to figure out the optimal motor level (each of my batteries need different settings 
-                                        in order to perform tuning more accurately)
-                                    </p>
-                                    <p>Here's the navigation sequence code:</p>
-                                    <pre><code>
-forwardSpeed = 150
-ccTurnSpeed = 150
-cTurnSpeed = 180
-end = (15,6)
-
-obsData = await scanRoom(ccTurnSpeed)
-
-gridPos, myPos = localization(obsData)
-
-start = (gridPos[0],gridPos[1],gridPos[2])
-plotStartEndPosition(myPos,end)
-
-while abs(gridPos[0]-end[0]) > 2 or abs(gridPos[1]-end[1]) > 2 or abs(gridPos[0]-end[0])+abs(gridPos[1]-end[1]) > 3: 
-    await navigate(start,end,forwardSpeed,ccTurnSpeed ,cTurnSpeed )
-    obsData = await scanRoom(ccTurnSpeed)
-    gridPos, myPos = localization(obsData)
-    start = (gridPos[0],gridPos[1],gridPos[2])
-    plotStartEndPosition(myPos,end)
-
-print("******** REACH the target*******")
-
-                                    </code></pre>
+<pre><code>
+        def navigation_leg(myPath, robotAngle, step, axis, operations, args, idx):
+        turningAngle, robotAngle = getAngle(robotAngle,step,axis)
+        print("turning:", turningAngle)
+        operations.append("turn")
+        if turningAngle >= 0:
+            args.append(str(ccTurnSpeed) + "," + str(turningAngle) + ",")
+        else:
+            args.append(str(cTurnSpeed) + "," + str(turningAngle) + ",")
+        print(axis, " axis step:", step, " to ", myPath[idx - 1] )
+        operations.append("forward")
+        args.append( str(forwardSpeed) + "," + str(abs(step)*gridDist) + ",")
+        return robotAngle
+    
+    
+    def navigate_instruction(myPath,robotStartAngle):
+        operations = []
+        args = []
+        prev = (-1,-1)
+        x_step = 0
+        y_step = 0
+        idx = 0
+        robotAngle = 0 
+        if abs(robotStartAngle) == 10:
+            robotAngle = 0
+        else:
+            robotAngle = robotStartAngle
+            
+        for p in myPath:
+            if p[0] == prev[0] and p[1] != prev[1]: 
+                if abs(x_step) > 0:
+                    robotAngle = navigation_leg(myPath, robotAngle, x_step, "x", operations, args, idx)             
+                x_step = 0 
+                y_step = y_step + (p[1]-prev[1])
+            elif p[0] != prev[0] and p[1] == prev[1]:
+                if abs(y_step) > 0: 
+                    robotAngle = navigation_leg(myPath, robotAngle, y_step, "y", operations, args, idx)
+                x_step = x_step + (p[0]-prev[0])
+                y_step = 0
+            # else :
+            #     print("Start :",p )
+            prev = p
+            idx = idx + 1
+        if abs(x_step) > 0:
+            robotAngle = navigation_leg(myPath, robotAngle, x_step, "x", operations, args, idx)
+        if abs(y_step) > 0: 
+            robotAngle = navigation_leg(myPath, robotAngle, y_step, "y", operations, args, idx)
+    
+        return operations, args    
+</code></pre>
+                                    <p><b><font size = "+2">A* Planning with known start and end locations</font></b></p>
+                                 
                                     <p>Here is a video of Navigation Trial 1:</p>
                                     <iframe src="  https://youtube.com/embed/1rS4APfozVc"
                                     width="560" height="315" frameborder="0" allowfullscreen></iframe> 
+
+
                                     <iframe src="  https://youtube.com/embed/PwRzasbtsMM"
                                     width="560" height="315" frameborder="0" allowfullscreen></iframe> 
                                     <iframe src="  https://youtube.com/embed/nQqIe7xUq2I"
                                     width="560" height="315" frameborder="0" allowfullscreen></iframe> 
-                                    <iframe src="  https://youtube.com/embed/PwRzasbtsMM"
+                                    <iframe src="  https://youtube.com/embed/2mbAc8MBqHo"
                                     width="560" height="315" frameborder="0" allowfullscreen></iframe> 
                                    
                                     <ul class="list-inline">
