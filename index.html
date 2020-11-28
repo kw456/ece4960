@@ -4127,7 +4127,8 @@ void loop()
                                         seems like it would be really hard to do considering the robot we're working with and would also be slower as well. 
                                     </p>
                                     <p>The open source library returns the pass-through points in the occupation map. For navigation purposes, I converted it into a sequence of turning angles and moving distances, so I 
-                                        could construct a list of instructions to send to my robot, letting my transform between the map frame and the grid frame. 
+                                        could construct a list of instructions to send to my robot, letting my transform between the map frame and the grid frame. I also decided to only use the version with instructions in 4 directions as opposed to 8, 
+                                        meaning I would only have to write functions for turning at 90 degrees. 
                                     </p>
 <pre><code>
     def getMap():
@@ -4214,6 +4215,8 @@ void loop()
 </code></pre>
                                     <p><b><font size = "+2">A* Planning with known start and end locations</font></b></p>
                                     <p><b>Example 1:</b> </p>
+                                    <iframe src="https://youtube.com/embed/3rlB1vqau6E"
+                                    width="560" height="315" frameborder="0" allowfullscreen></iframe> 
 <pre><code>
         Start (4, 3) with robot heading at 0 degree
         End (8, 14)
@@ -4235,7 +4238,10 @@ void loop()
                                         of the actual end locations after 5 tests (in terms of the physical robot).
                                     </p>
                                     <img class="img-fluid d-block mx-auto" src="assets/img/lab10/example1trials.PNG" alt="" />
+                                    
                                     <p><b>Example 2</b></p>
+                                    <iframe src="https://youtube.com/embed/qXtcjA6YHcw"
+                                    width="560" height="315" frameborder="0" allowfullscreen></iframe> 
 <pre><code>
         Start (14, 8) with robot heading at 179 degree
         End (3, 14)
@@ -4331,6 +4337,8 @@ void loop()
                                     </pre>
                                     <p><b>Here are three more examples:</b></p>
                                     <p>Extra Example 1:</p>
+                                    <iframe src="https://youtube.com/embed/_GRieXlTaNY"
+                                    width="560" height="315" frameborder="0" allowfullscreen></iframe> 
 <pre>
 Start: Unknown
 End: (8, 14)
@@ -4371,6 +4379,8 @@ Robot Start Angle: 90.0
                                     
 
 <p>Extra Example 2:</p>
+<iframe src="https://youtube.com/embed/wYr0RTxiECw"
+width="560" height="315" frameborder="0" allowfullscreen></iframe> 
 <pre>
 Start: Unknown
 End: (14, 7)
@@ -4421,19 +4431,74 @@ Robot Start Angle: 30.0
 <img class="img-fluid d-block mx-auto" src="assets/img/lab10/freestyle2_.PNG" alt="" />
 
 <p>Extra Example 3:</p>
+<iframe src="https://youtube.com/embed/myhAANr8Qck"
+width="560" height="315" frameborder="0" allowfullscreen></iframe> 
+<pre>
+Start: Unknown
+End: (14, 7)
 
+---------- UPDATE STATS -----------
+Bel index     :  (5, 15, 4) with prob =  0.9999986
+Bel_bar prob at index =  0.0001388888888888889
+Belief   : (-0.900, 1.100, -90.000)
+---------- UPDATE STATS -----------
+robot start position ( -0.9 1.1 )
+Robot Start Angle: -90.0
+</pre>
+<img class="img-fluid d-block mx-auto" src="assets/img/lab10/freestyle3.PNG" alt="" />
+<pre>
+turning: 0.0
+y  axis step: -4  to  (5, 11)
+turning: 90
+x  axis step: 2  to  (7, 11)
+turning: -90
+y  axis step: -4  to  (7, 7)
+turning: 90
+x  axis step: 7  to  (14, 7)
 
-                                    <iframe src="  https://youtube.com/embed/1rS4APfozVc"
-                                    width="560" height="315" frameborder="0" allowfullscreen></iframe> 
+('turn', '110,0.0,')
+('forward', '130,800,')
+('turn', '110,90,')
+('forward', '130,400,')
+('turn', '130,-90,')
+('forward', '130,800,')
+('turn', '110,90,')
+('forward', '130,1400,')
+******** sequence done *******
 
+---------- UPDATE STATS -----------
+Bel index     :  (15, 9, 13) with prob =  0.9999986
+Bel_bar prob at index =  0.0001388888888888889
+Belief   : (-0.900, 1.100, -90.000)
+---------- UPDATE STATS -----------
+robot start position ( 1.52, -0.2 )
+Robot Start Angle: 130
+</pre>
+<img class="img-fluid d-block mx-auto" src="assets/img/lab10/freestyle3_.PNG" alt="" />
+<Pre>
+turning: -40
+y  axis step: -2  to  (15, 7)
+turning: 90
+x  axis step: -1  to  (14, 7)
 
-                                    <iframe src="  https://youtube.com/embed/PwRzasbtsMM"
-                                    width="560" height="315" frameborder="0" allowfullscreen></iframe> 
-                                    <iframe src="  https://youtube.com/embed/nQqIe7xUq2I"
-                                    width="560" height="315" frameborder="0" allowfullscreen></iframe> 
-                                    <iframe src="  https://youtube.com/embed/2mbAc8MBqHo"
-                                    width="560" height="315" frameborder="0" allowfullscreen></iframe> 
-                                   
+('turn', '110,-20,')
+('forward', '130,-200,')
+('turn', '110,90,')
+('forward', '130,200,')
+******** sequence done *******
+</Pre>
+                                    <p>In terms of future improvements, I would further fine tune the going forward and turning functions to ensure that the robot didn't overshoot and that it actually 
+                                        turned at a 90 degree angle when it was following my path. I guess going off of that, I could add in support for turning at 45 degrees so that I can technically 
+                                        be able to execute a shorter path. However, considering how the robot is not exactly the best, this might lead to a decrease in path accuracy. 
+                                        I think my obstacle avoidance code could be refined a little more as well because the robot still ends up hitting 
+                                        the walls sometimes. Additionally, I could cut down more on the delays between commands to decrease the time it takes to complete a path. 
+                                    </p>
+                                    <p>I also have a note about the batteries and how I started going a little bit insane because I had to keep charging them and I had 
+                                        limited continuous testing time because of their limited time span. I then took one of my dad's portable power banks for his phone and strapped it under the car (surprisingly it fits), and then 
+                                        cut open a USB cable to hook up to the battery connector. It actually seems to work well :)) The lithium-ion battery seems to last longer and can be charged faster. Also, my 
+                                        power bank can supply up to around 2.4A but when I tried another power bank rated at 1A, it didn't work.  
+                                    </p>
+                                    <img class="img-fluid d-block mx-auto" src="assets/img/lab10/battery.PNG" alt="" />
                                     <ul class="list-inline">
                                         <li>Date: 11/24/20</li>
                                     </ul>
