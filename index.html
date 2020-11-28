@@ -4130,7 +4130,40 @@ void loop()
                                         could construct a list of instructions to send to my robot, letting my transform between the map frame and the grid frame. 
                                     </p>
 <pre><code>
-        def navigation_leg(myPath, robotAngle, step, axis, operations, args, idx):
+    def getMap():
+        grid = [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+                1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+                1,1,1,1,1,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,
+                1,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,
+                1,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,
+                1,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,
+                1,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,
+                1,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,
+                1,1,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,
+                1,1,0,0,0,1,1,0,0,1,1,1,1,1,1,1,1,1,1,1,
+                1,1,1,0,0,1,1,0,0,0,0,0,0,0,0,0,1,1,1,1,
+                1,1,1,0,0,1,1,0,0,0,0,0,0,0,0,0,1,1,1,1,
+                1,1,0,0,0,1,1,0,0,0,0,0,0,0,0,0,1,1,1,1,
+                1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,
+                1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,
+                1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,
+                1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,
+                1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,
+                1,1,1,1,1,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,
+                1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+            ]
+    
+        # Convert the 1D list into a 1D numpy array
+        grid = np.array(grid, dtype=np.uint8)
+        grid.resize(20,20)
+        grid = np.flip(grid,1)
+        grid = np.flip(grid,0)
+        grid = np.flip(grid,1)
+        gmap = OccupancyGridMap(grid, 1)
+        return gmap
+
+
+    def navigation_leg(myPath, robotAngle, step, axis, operations, args, idx):
         turningAngle, robotAngle = getAngle(robotAngle,step,axis)
         print("turning:", turningAngle)
         operations.append("turn")
@@ -4180,8 +4213,128 @@ void loop()
         return operations, args    
 </code></pre>
                                     <p><b><font size = "+2">A* Planning with known start and end locations</font></b></p>
-                                 
-                                    <p>Here is a video of Navigation Trial 1:</p>
+                                    <p><b>Example 1:</b> </p>
+<pre><code>
+        Start (4, 3) with robot heading at 0 degree
+        End (8, 14)
+        
+        The A* planning
+        turning: 90
+        y  axis step: 11  to  (4, 14)
+        turning: -90
+        x  axis step: 4  to  (8, 14)
+        
+        instructions sent to robot via BT
+        ('turn', '110,90,')
+        ('forward', '130,2200,')
+        ('turn', '130,-90,')
+        ('forward', '130,800,')        
+</code></pre>
+                                    <img class="img-fluid d-block mx-auto" src="assets/img/lab10/example1.PNG" alt="" />                                      
+                                    <p>In reality, the turning angles and moving distances of the robot are usually at least a little bit off. Here is a map
+                                        of the actual end locations after 5 tests (in terms of the physical robot).
+                                    </p>
+                                    <img class="img-fluid d-block mx-auto" src="assets/img/lab10/example1trials.PNG" alt="" />
+                                    <p><b>Example 2</b></p>
+<pre><code>
+        Start (14, 8) with robot heading at 179 degree
+        End (3, 14)
+        
+        The A* planning
+        turning: -350
+        x  axis step: -7  to  (7, 8)
+        turning: 270
+        y  axis step: 3  to  (7, 11)
+        turning: -270
+        x  axis step: -4  to  (3, 11)
+        turning: 270
+        y  axis step: 3  to  (3, 14)
+        
+        instructions sent to robot via BT
+        ('turn', '130,-350,')
+        ('forward', '130,1400,')
+        ('turn', '110,270,')
+        ('forward', '130,600,')
+        ('turn', '130,-270,')
+        ('forward', '130,800,')
+        ('turn', '110,270,')
+        ('forward', '130,600,')        
+</code></pre>
+                                    <img class="img-fluid d-block mx-auto" src="assets/img/lab10/example2.PNG" alt="" />
+                                    <p>In reality, the turning angles and moving distances of the robot are usually at least a little bit off. Here is a map
+                                            of the actual end locations after 5 tests (in terms of the physical robot). 
+                                    </p>
+                                    <img class="img-fluid d-block mx-auto" src="assets/img/lab10/example2trials.PNG" alt="" />
+                                    
+                                    <p><b><font size = "+2">Navigation with unknown start and known end locations</font></b></p>
+                                    <p>As the previous A* algo. navigation results showed, using the A* algorithm alone can get the robot pretty close to the target. 
+                                        However, the probability of reaching the <b>precise and exact</b>target location is fairly low. Since I had the scanning/localization code from Lab9, I added it to my navigation algorithm. 
+                                        Here is how it works:
+                                        </p>
+<pre>
+        To navigate from point A (unknown) to point B (known).
+
+        1. Check if the robot reached the target. If it did, stop the navigation. Otherwise, continue navigation
+        2. Scan the room to get 18 data points
+        3. Run localization to figure out the robot's position and angle
+        4. Run A* to generate a list of robot movement instructions
+        5. Send instructions to the robot to navigate to the target
+        6. Go back to Step#1 and repeat the sequence        
+
+        Note: The robot has built-in collision prevention. It prevents the robot from slamming into walls. If it detects a collision, it also sends a bluetooth message back to the navigation code, so it can abort the current navigation sequence and then re-start the scanning/localization/navigation routine. 
+
+            await theRobot.sendCommand(Commands.REQ_FORWARD, len(forwardArgs), bytearray(forwardArgs,"utf-8"))
+            await asyncio.sleep(4)
+            if theRobot.msg is not None or theRobot.msg != "":
+                if "COLLISION" in theRobot.msg :
+                    print("COLLISION - STOP the navigation")
+                    break
+        
+        1. Here is the criteria for repeating the A* algorithm again (aka the criteria for determining whether or not the robot has reached its target):
+            abs(gridPos[0]-goal_node[0]) > 2 or abs(gridPos[1]-goal_node[1]) > 2 or abs(gridPos[0]-goal_node[0])+abs(gridPos[1]-goal_node[1]) > 2
+        
+        2. In my map, localization worked most of the time. However, I did find 1 or 2 spots (e.g the NE and E corners are similar) that could output the wrong location and mess up the navigation. In general, the robot could correct the mismatched localization issue with extra iterations.
+
+        3. I usually performed a calibration routine before the navigation to figure out the optimal motor level (and each of my batteries needed different settings in order to perform the turning more accurately.
+                forwardSpeed = 130
+                ccTurnSpeed = 110
+                cTurnSpeed = 130
+                obsTurnSpeed = 130
+</pre>
+                                    <p>Here is the navigation code:</p>
+                                    <p>
+                                            gmap = getMap()
+                                            goal_node = (14,7)
+                                            
+                                            obsData = await scanRoom(obsTurnSpeed)
+                                            gridPos, myPos = localization(obsData)
+                                            start_node = (gridPos[0],gridPos[1],gridPos[2])
+                                            myStart = loc.mapper.from_map(start_node[0],start_node[1],start_node[2])
+                                            print("robot start position (", myStart[0], myStart[1], ")")
+                                            print("Robot Start Angle:", myStart[2])
+                                            
+                                            path, path_px = a_star(start_node, goal_node, gmap, movement='4N')
+                                            
+                                            while abs(gridPos[0]-goal_node[0]) > 2 or abs(gridPos[1]-goal_node[1]) > 2 or abs(gridPos[0]-goal_node[0])+abs(gridPos[1]-goal_node[1]) > 2:
+                                                await AStartNavigate(path,myStart[2])
+                                                obsData = await scanRoom(obsTurnSpeed)
+                                                gridPos, myPos = localization(obsData)
+                                                start_node = (gridPos[0],gridPos[1],gridPos[2])
+                                                myStart = loc.mapper.from_map(start_node[0],start_node[1],start_node[2])
+                                                print("robot start position (", myStart[0], myStart[1], ")")
+                                                print("Robot Start Angle:", myStart[2])
+                                                gmap = getMap()
+                                                path, path_px = a_star(start_node, goal_node, gmap, movement='4N')
+                                                gmap.plot()
+                                                plot_path(path_px)
+                                            print("******** Arrived at Target *******")                                            
+                                    </p>
+                                    <p><b>Here are three more examples:</b></p>
+                                    <p>Extra Example 1:</p>
+<pre></pre>
+
+
+
                                     <iframe src="  https://youtube.com/embed/1rS4APfozVc"
                                     width="560" height="315" frameborder="0" allowfullscreen></iframe> 
 
@@ -4208,34 +4361,7 @@ void loop()
                 </div>
             </div>
         </div>
-         <!-- Modal 11-->
-         <div class="portfolio-modal modal fade" id="portfolioModal11" tabindex="-1" role="dialog" aria-hidden="true">
-            <div class="modal-dialog">
-                <div class="modal-content">
-                    <div class="close-modal" data-dismiss="modal"><img src="assets/img/close-icon.svg" alt="Close modal" /></div>
-                    <div class="container">
-                        <div class="row justify-content-center">
-                            <div class="col-lg-8">
-                                <div class="modal-body">
-                                    <!-- Project Details Go Here-->
-                                    <h2 class="text-uppercase">Lab 11</h2>
-                                    <p class="item-intro text-muted">PID Control</p>
-                                    <img class="img-fluid d-block mx-auto" src="https://cdn2.iconfinder.com/data/icons/arrows-1-3/128/Looped-Loop-Refresh-Repeat-Arrow-Feedback-512.png" alt="" />
-                                    <p>Description of lab</p>
-                                    <ul class="list-inline">
-                                        <li>Date: </li>
-                                    </ul>
-                                    <button class="btn btn-primary" data-dismiss="modal" type="button">
-                                        <i class="fas fa-times mr-1"></i>
-                                        Close Project
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+         
          <!-- Modal 12-->
          <div class="portfolio-modal modal fade" id="portfolioModal12" tabindex="-1" role="dialog" aria-hidden="true">
             <div class="modal-dialog">
@@ -4248,11 +4374,11 @@ void loop()
                                     <!-- Project Details Go Here-->
                                     <h2 class="text-uppercase">Lab 12</h2>
                                     <p class="item-intro text-muted">Inverted pendulum</p>
-                                    <img class="img-fluid d-block mx-auto" src="https://www.researchgate.net/profile/Jian_Huang14/publication/285576864/figure/fig6/AS:328305132752907@1455285451614/Mobile-wheeled-inverted-pendulum-MWIP-system-model.png" alt="" />
                                     <p>Description of lab</p>
                                     <ul class="list-inline">
                                         <li>Date: </li>
                                     </ul>
+                                    <p></p>
                                     <button class="btn btn-primary" data-dismiss="modal" type="button">
                                         <i class="fas fa-times mr-1"></i>
                                         Close Project
