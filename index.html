@@ -3631,10 +3631,10 @@
                                     <!-- Project Details Go Here-->
                                     <h2 class="text-uppercase">Lab 10</h2>
                                     <p class="item-intro text-muted">Planning</p>
-                                    <p> To start the implementation, functions for controling the robot as precisely as possible had to be written. Although I already had localization from the previous lab to pinpoint the robot's location, 
+                                    <p> To start the implementation, functions for controlling the robot as precisely as possible had to be written. Although I already had localization from the previous lab to pinpoint the robot's location, 
                                         I needed to be able to physically navigate along a path with my robot. 
                                     </p>
-                                    <p> To move the robot in a straight line, I had functions for the motor speeds of both motors, calibrating it to compensate for :</p>
+                                    <p> To move the robot in a straight line, I had functions for the motor speeds of both motors, calibrating it to compensate for how one motor was stronger than the other:</p>
                                     <pre><code>
 const float _adjustPercent= 1.0630;
 myMotorDriver.setDrive( 0, 1, power); 
@@ -4028,14 +4028,14 @@ void loop()
     
 </code></pre>
                                     <p><b><font size = "+2">Bluetooth commands </font></b></p>
-                                    <p>To add on to Lab 9 (aka stuff I probably should have included in the last lab writeup), 
+                                    <p>Adding on to Lab 9 (i.e. stuff I should have included in the last lab writeup), 
                                         I finalized the code for my Bluetooth commands with the following commands:</p>
                                     <pre><code>
-                                        REQ_OBS (motorLevel) - Async request for the  Arduino to perform a 360 degree scan and pair down the values to 18 data points
-                                        GIVE_OBS - Async event from Arduino when scan is completed and the 18 data values are transmitted back 
-                                        REQ_TURN (motorLevel, degree to turn) - Async request for Arduino to turn the vehicle to the desired angle. Positive number will turn vehicle CCW, negative number will turn clockwise 
-                                        REQ_FORWARD (motorLevel, distance(mm)) - Request Arduino to drive forward and stop at the distance
-                                        GIVE_MSG - Asyncio event from Arduino to send messages to PC. 
+REQ_OBS (motorLevel) - Async request for the  Arduino to perform a 360 degree scan and pair down the values to 18 data points
+GIVE_OBS - Async event from Arduino when scan is completed and the 18 data values are transmitted back 
+REQ_TURN (motorLevel, degree to turn) - Async request for Arduino to turn the vehicle to the desired angle. Positive number will turn vehicle CCW, negative number will turn clockwise 
+REQ_FORWARD (motorLevel, distance(mm)) - Request Arduino to drive forward and stop at the distance
+GIVE_MSG - Asyncio event from Arduino to send messages to PC. 
                                     </code></pre>
                                     <p>Shoutout to Alex for those very helpful videos. However, I still found that at the beginning of getting the Bluetooth to work, it crashed all the time, and I 
                                         found that the PID oscillation was causing the issue since it hadn't really shown up in the last lab. The BT stabilized much more once I removed PID control (which is a little weird but eliminated a lot of the issues 
@@ -4071,15 +4071,15 @@ void loop()
 </code></pre>
                                     <p>I then had the Arduino code to parse comma delimited arguments:</p>
                                     <pre><code>
-                                        char * token ;  
-                                        int arg[2];
-                                        int x = 0;             
-                                        token = strtok((char *)&cmd->data, ",");
-                                        while( token != NULL ) {
-                                          arg[x]= atoi(token);
-                                          token = strtok(NULL, ",");
-                                          x++;
-                                        }                          
+char * token ;  
+int arg[2];
+int x = 0;             
+token = strtok((char *)&cmd->data, ",");
+while( token != NULL ) {
+    arg[x]= atoi(token);
+    token = strtok(NULL, ",");
+    x++;
+}                          
                                     </code></pre>
 
                                     <p><b><font size = "+2">Map Discretization</font></b></p>
@@ -4119,7 +4119,7 @@ void loop()
                                     <p>In terms of navigation, I used the Arduino and Jupyter notebook code together. The Arduino code handled motor control functions, 
                                         turning and odometry, and collision detection. The Python code ran the navigation algorithm and localization calculations. 
                                     </p>
-                                    <p>For planning, I used an open source A* algorithm by Richardos Drakoulis at https://github.com/richardos/occupancy-grid-a-star, where he had a Python implementation of 
+                                    <p>For planning, I used an open source A* algorithm by Richardos Drakoulis at <a href="https://github.com/richardos/occupancy-grid-a-star"></a>, where he had a Python implementation of 
                                         the algorithm in a 2D occupancy grid map. I went with A* instead since even though it has exponential time and storage complexity, I thought the slight bit of extra 
                                         time for computation didn't really make a different in the actually run time of the navigation run. Also, it seems to provide the best shortest route which is better 
                                         considering the robot isn't the most accurate (since less distance that needs to be traveled hopefully means the robot will have less distance 
