@@ -4566,6 +4566,7 @@ x  axis step: -1  to  (14, 7)
                                     <pre>
 Step Response Procedure
 - Run both motors at full speed (at motor level = 254) for 1000 ms
+- Have the proximity parameter be at around 15 cm (similar to what we expect in the final controller)
 - Turn the car right (motor0 at full speed, motor1 at 100) for 500 ms
 - Theta dot is the gyroscope reading
 - Theta is the yaw calculated as follows through integration from the gyroscope:
@@ -4591,6 +4592,99 @@ Step Response Procedure
                                     <p>Along with that, I figured out the max motor levels that would allow the robot to go in a straight line just for reference. I got Motor0: 249 and Motor1:254, showing a slight
                                         asymmetry in the strength of the motors. 
                                     </p>
+                                    <p>I was also to obtain find the drag (d) and inertia (I) using the equations from lecture: </p>
+                                    <img class="img-fluid d-block mx-auto" src="assets/img/lab11/equations.PNG" alt="" />
+<pre>
+    Uss = 254 - 100 = 154
+    Theta_dot_ss = -200 * pi/180 = 3.49
+    d = U_ss/Theta_dot_ss = 44.126
+
+    Sampling time = 40 ms for each sample
+    Rise time is around 5 samples = 0.2 seconds
+    I = -d * risetime / ln(0.1) = 3.837
+</pre>
+<p>I then had the Python code for the LQR calculation:</p>
+<pre>
+    def lqr(A,B,Q,R):
+        X = np.matrix(scipy.linalg.solve_continuous_are(A, B, Q, R))     
+        K = np.matrix(scipy.linalg.inv(R)*(B.T*X))
+        eigVals, eigVecs = scipy.linalg.eig(A-B*K)     
+        return K, X, eigVals
+    
+    v = 3.5
+    d = 44.126
+    I = 3.837
+    
+    A = np.matrix([
+        [0.0, v, 0.0],
+        [0.0, 0.0, 1.0],
+        [0.0, 0.0, -d/I],
+    ])
+    
+    B = np.matrix([
+        [0.0],
+        [0.0],
+        [1/I]
+    ])
+    
+    Q = np.matrix([
+        [100.,   .0,   .0],
+        [.0,    10.0,   .0],
+        [.0,     .0,    10.],
+    ])
+    
+    R = np.matrix([1.0])
+    
+    K, X, eig = lqr(A, B, Q, R)
+    
+    K =  [9.999999999999982, 58.691046882976124, 4.940271203138708]
+    
+    U = -Kx
+</pre>
+My Arduino code is as follows:
+<pre>
+        void LQRControl(int maxMotor0, int maxMotor1){
+            static long last_time = 0;
+            float alpha = 0.2;
+            static float myGyroZ_LPF = 0;
+            static float old_myGyroZ_LPF = 0;
+          
+            myICM.getAGMT();
+          
+            unsigned int proxValue = proximitySensor.getProximity(); 
+          
+            //Gyroscope
+            myGyroZ = myICM.gyrZ();
+            float myGyroZ_rad = myGyroZ * 3.1415926 /180;
+          
+          //  myGyroZ_LPF = alpha * myGyroZ + ( 1 - alpha) *  old_myGyroZ_LPF ;
+          //  old_myGyroZ_LPF = myGyroZ_LPF;
+           
+            //yaw using gyroscope
+            float dt = (millis()-last_time)/1000.;
+            if (dt > 0.01) dt = 0.02;
+            last_time = millis();    
+            myYaw += + myGyroZ*dt;
+            float myYaw_rad = myYaw * 3.1415926 /180;
+          
+            int setPoint = 80;
+            
+            float u = 9.999999999999982 * proxValue + 58.691046882976124 * myYaw_rad + 4.940271203138708 * myGyroZ_rad;
+          
+            if (proxValue &lt setPoint){
+              SetMotors(getValue(254-u),maxMotor1);
+            } else {
+              SetMotors(maxMotor1,getValue(254-u));
+            }
+            
+          }
+          
+          int getValue(int input) {
+            int ret = input;
+            if (input &lt 0) ret = 100;
+            return ret;
+          }
+</pre>
                                     <ul class="list-inline">
                                         <li>Date: 12/7/20</li>
                                     </ul>
