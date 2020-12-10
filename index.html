@@ -491,8 +491,6 @@
                                             <img class="img-fluid d-block mx-auto" src="assets/img/lab3/IMG_1100.png" width="500" height = auto alt="" />
                                             <li>Time to charge battery: around 4-5 hours (wasn't watching it near the end but that seems like a good estimate)</li>
                                             <li>Battery life of car: 32 minutes not running at full speed the whole time (probably around 20 minutes)</li>
-                                            <li>Number of "clicks" when rotating a wheel slowly: 120 (shown in video below)                                           <video controls="controls" width="800" height="600" 
-                                                name="Video Name" src="assets/img/lab3/IMG_1105.mov"></video></li>
  
                                         </ul>     
                                     </div>
@@ -518,8 +516,8 @@
                                                 averaging three trials, I got a max rotational speed of 1.73 rotations/sec, or <b>10.87 rad/sec</b>. This happened when 
                                                 the battery was at approximately full capacity. 
                                             </li>
-                                            <video controls="controls" width="800" height="600" 
-                                            name="Video Name" src="assets/img/lab3/spin.MOV"></video>
+                                            <iframe src="https://www.youtube.com/embed/2mDN76l7dHw"
+                                             width="560" height="315" frameborder="0" allowfullscreen></iframe> 
                                             <li>Distance needed to stop after starting from full speed (averaged from 5 trials): <b>4.7 feet</b></li>
                                             <li>Braking distance in slow mode: <b>5.5 inches</b></li>
                                             <li>Acceleration:
@@ -543,8 +541,8 @@
                                                     life. At a low battery level, it is capable of very slow speeds (especially in slow mode). However, at almost full battery
                                                     capacity and based on the data, it appears the robot can reach up to <b>8.33 ft/sec (2.5 m/s)</b> </li> 
                                             </li>
-                                            <video controls="controls" width="800" height="600" 
-                                            name="Video Name" src="assets/img/lab3/IMG_1089 (3).mov"></video>
+                                            <!--<video controls="controls" width="800" height="600" 
+                                            name="Video Name" src="assets/img/lab3/IMG_1089 (3).mov"></video>-->
                                         </ul>  
                                     </div> 
                                     <p><b>Manual Control:</b></p>
@@ -4525,8 +4523,74 @@ x  axis step: -1  to  (14, 7)
                                 <div class="modal-body">
                                     <!-- Project Details Go Here-->
                                     <h2 class="text-uppercase">Lab 11a</h2>
-                                    <p class="item-intro text-muted">LQR</p>
-                                    <p> Coming soon. Slip days in use</p>
+                                    <p class="item-intro text-muted">LQR: Turning a corner (Part I)</p>
+                                    <p> The purpose of the lab is to have the robot do straight wall following as fast as possible. This involves writing the code infrastructure, 
+                                        approximating an A and B matrix to describe the dynamics of the system, and implementing an LQR controller. 
+                                    <p>I first configured my robot such that I had the ToF sensor pointing forward and my proximity sensor pointing sideways, mounted over the wheels so it was closer
+                                        to the wall. I then had my IMU at the top. 
+                                    </p>
+                                    <img class="img-fluid d-block mx-auto" src="assets/img/lab11/IMG_0679.jpeg" alt="" />
+                                    <p>I then characterized the proximity sensor, first setting the programmable integration to be 4 (since it could be a number between 1 to 8 and 
+                                        I wanted to pick a nice medium value in turns of tradeoffs for accuracy and speed). I also found the measurement time to be about 0.1 seconds when doing this and also found the minimum 
+                                        measurement distance to be around 3 cm and the max value to be around 20.5 cm. Therefore I determined a good set point value would be a 
+                                        distance of 8.5 cm between the proximity sensor and the wall. When factoring in the distance from the sensor to the center of the robot, this value became 8.5 + 6.5 cm = 15 cm as my set-point value.
+                                    </p>
+                                    <p>I also collected data to test the proximity values as they related to the distance from the center of the robot to the wall:</p>
+<pre>
+    Z (cm) | Proximity value
+    9      | 510
+    10     | 326
+    11     | 197
+    12     | 148
+    13     | 123
+    14     | 98
+    15     | 80
+    16     | 62
+    17     | 52
+    18     | 45
+    19     | 40
+    20     | 35
+    21     | 31
+    22     | 28
+    23     | 26
+    24     | 24
+    25     | 23
+    26     | 22
+    27     | 20
+</pre>
+                                    <p>I then wrote some code to let me debug, record, and easily add functionality to the robot as well, that will be described below</p>
+                                    <p>To first figure out the system in state space, I made some of the assumptions stated in the lab such as assuming that the only input was the torque around the robot axis and that the robot velocity was always set to the upper limit. Our
+                                        state space then includes the distance to the wall (d), the orientation of the robot (theta), and the angular velocity of the robot (thetadot). I tested the system with a step response as shown:
+
+                                    </p>
+                                    <pre>
+Step Response Procedure
+- Run both motors at full speed (at motor level = 254) for 1000 ms
+- Turn the car right (motor0 at full speed, motor1 at 100) for 500 ms
+- Theta dot is the gyroscope reading
+- Theta is the yaw calculated as follows through integration from the gyroscope:
+        static long last_time = 0;
+        myGyroZ = myICM.gyrZ();
+        float dt = (millis()-last_time)/1000.;
+        last_time = millis();    
+        myYaw += + myGyroZ*dt;
+                                    </pre>
+<p>Plotting this data that I received, I got the following graph. I can see from it that the angular states behave like a second order system and that we can't control theta directly, though we can control thetadot directly.  </p>         
+<img class="img-fluid d-block mx-auto" src="assets/img/lab11/stepresponse.png" alt="" />
+<p>I also captured the max speed using the ToF sensor since it has proven to provide very accurate data (as shown when doing localization in previous labs). I found the max speed to be around 3.5 m/s 
+    using the following code when the robot had finished accelerating:
+</p>  
+<pre><code>
+        static long last_dist = 0;
+        static long last_time = 0;
+        float dt = (millis()-last_time)/1000.;
+        float dist = getDistance();  
+        float tofSpeed =  abs(last_dist - dist)/(1000 * dt);
+        last_dist = dist;
+</code></pre>
+                                    <p>Along with that, I figured out the max motor levels that would allow the robot to go in a straight line just for reference. I got Motor0: 249 and Motor1:254, showing a slight
+                                        asymmetry in the strength of the motors. 
+                                    </p>
                                     <ul class="list-inline">
                                         <li>Date: 12/7/20</li>
                                     </ul>
