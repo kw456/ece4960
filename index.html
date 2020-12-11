@@ -4531,11 +4531,11 @@ x  axis step: -1  to  (14, 7)
                                     </p>
                                     <img class="img-fluid d-block mx-auto" src="assets/img/lab11/IMG_0679.jpeg" alt="" />
                                     <p>I then characterized the proximity sensor, first setting the programmable integration to be 4 (since it could be a number between 1 to 8 and 
-                                        I wanted to pick a nice medium value in turns of tradeoffs for accuracy and speed). I also found the measurement time to be about 0.1 seconds when doing this and also found the minimum 
+                                        I wanted to pick a nice medium value in turns of tradeoffs for accuracy and speed). I also found the measurement time to be about 0.06 seconds when doing this and also found the minimum 
                                         measurement distance to be around 3 cm and the max value to be around 20.5 cm. Therefore I determined a good set point value would be a 
-                                        distance of 8.5 cm between the proximity sensor and the wall. When factoring in the distance from the sensor to the center of the robot, this value became 8.5 + 6.5 cm = 15 cm as my set-point value.
+                                        distance of 8.5 cm between the proximity sensor and the wall. When factoring in the distance from the sensor to the center of the robot, this value became 8.5 + 6.5 cm = 15 cm = 0.15 m as my set-point value (Z as shown in my data collected below).
                                     </p>
-                                    <p>I also collected data to test the proximity values as they related to the distance from the center of the robot to the wall:</p>
+                                    <p>Here is my collected data to test the proximity values as they related to the distance from the center of the robot to the wall:</p>
 <pre>
     Z (cm) | Proximity value
     9      | 510
@@ -4558,6 +4558,12 @@ x  axis step: -1  to  (14, 7)
     26     | 22
     27     | 20
 </pre>
+                                    <p>Using this, I was able to fit this to a function that allowed me to translate from proximity values to distances from the wall</p>
+                                    <img class="img-fluid d-block mx-auto" src="assets/img/lab11/fit.PNG" alt="" />
+                                    <p>I put this in my Arduino code as:</p>
+                                    <pre>
+    Dist( in meter)= 69.9294 * pow(proxValue , -0.34455) /100.0 
+                                    </pre>
                                     <p>I then wrote some code to let me debug, record, and easily add functionality to the robot as well, that will be described below</p>
                                     <p>To first figure out the system in state space, I made some of the assumptions stated in the lab such as assuming that the only input was the torque around the robot axis and that the robot velocity was always set to the upper limit. Our
                                         state space then includes the distance to the wall (d), the orientation of the robot (theta), and the angular velocity of the robot (thetadot). I tested the system with a step response as shown:
@@ -4567,7 +4573,7 @@ x  axis step: -1  to  (14, 7)
 Step Response Procedure
 - Run both motors at full speed (at motor level = 254) for 1000 ms
 - Have the proximity parameter be at around 15 cm (similar to what we expect in the final controller)
-- Turn the car right (motor0 at full speed, motor1 at 100) for 500 ms
+- Turn the car right (motor0 at full speed, motor1 at 210) for 500 ms
 - Theta dot is the gyroscope reading
 - Theta is the yaw calculated as follows through integration from the gyroscope:
         static long last_time = 0;
@@ -4577,8 +4583,9 @@ Step Response Procedure
         myYaw += + myGyroZ*dt;
                                     </pre>
 <p>Plotting this data that I received, I got the following graph. I can see from it that the angular states behave like a second order system and that we can't control theta directly, though we can control thetadot directly.  </p>         
-<img class="img-fluid d-block mx-auto" src="assets/img/lab11/stepresponse.png" alt="" />
-<p>I also captured the max speed using the ToF sensor since it has proven to provide very accurate data (as shown when doing localization in previous labs). I found the max speed to be around 3.5 m/s 
+<img class="img-fluid d-block mx-auto" src="assets/img/lab11/step.PNG" alt="" />
+<p>The data was collected using a USB cable with the Serial Plotter as opposed to Bluetooth since I just needed the data
+    at the end of the run and it allowed me to finish the lab in time. I also captured the max speed using the ToF sensor since it has proven to provide very accurate data (as shown when doing localization in previous labs). I found the max speed to be around 3.3 m/s 
     using the following code when the robot had finished accelerating:
 </p>  
 <pre><code>
@@ -4595,13 +4602,13 @@ Step Response Procedure
                                     <p>I was also to obtain find the drag (d) and inertia (I) using the equations from lecture: </p>
                                     <img class="img-fluid d-block mx-auto" src="assets/img/lab11/equations.PNG" alt="" />
 <pre>
-    Uss = 254 - 100 = 154
-    Theta_dot_ss = -200 * pi/180 = 3.49
-    d = U_ss/Theta_dot_ss = 44.126
+    Uss = 250 - 210 = 40
+    Theta_dot_ss = -0.55
+    d = -U_ss/Theta_dot_ss = 40/-0.55 = 72.727
 
-    Sampling time = 40 ms for each sample
-    Rise time is around 5 samples = 0.2 seconds
-    I = -d * risetime / ln(0.1) = 3.837
+    Sampling time = 20 ms for each sample
+    Rise time is around 8 samples = 0.02 * 8 = 0.16 seconds
+    I = -d * risetime / ln(0.1) = 5.054
 </pre>
 <p>I then had the Python code for the LQR calculation:</p>
 <pre>
@@ -4611,9 +4618,9 @@ Step Response Procedure
         eigVals, eigVecs = scipy.linalg.eig(A-B*K)     
         return K, X, eigVals
     
-    v = 3.5
-    d = 44.126
-    I = 3.837
+    v = 3.3
+    d = 77.727
+    I = 5.054
     
     A = np.matrix([
         [0.0, v, 0.0],
@@ -4633,15 +4640,23 @@ Step Response Procedure
         [.0,     .0,    10.],
     ])
     
-    R = np.matrix([1.0])
+    R = np.matrix([0.1])
     
     K, X, eig = lqr(A, B, Q, R)
     
-    K =  [9.999999999999982, 58.691046882976124, 4.940271203138708]
+    K =  [31.622776601683626, 130.69723874725537, 8.638251909259512]
     
     U = -Kx
 </pre>
-My Arduino code is as follows:
+<p>For my Arduino code, I had the setup code (State 0) where I initialized all the sensors as with all the previous labs. I then 
+had my robot run with its max motor levels for 0.3 seconds in order to get it to accelerate to full speed, before then performing LQR control as shown below:</p>
+<p>For selecting my Q and R values, I selected the values in order to put more weight in the value of the proximity sensor as opposed to theta or theta-dot since I wanted to prioritize 
+    the distance from the robot to the wall. I knew that Q defined the weight on the state and R defined the robot's control energy.
+     I also knew that choosing a large value for R meant that you were trying to stabilize the system with less weighted energy while choosing a small value of R would mean 
+you didn't want to penalize the control signal. A large value of Q would mean that the system would try to stabilize with the least possible changes in states.    </p>
+<p>I played around with the Q matrix and the values didn't seem to make too significant of a difference, so I kept the values as shown above. I did see though that when I tried a larger value of R such as 
+    1 or 10 since my robot had limits in terms of the motor level values it was capable of achieving (since the max was 254), which is why I went with a smaller value (0.1).
+</p>
 <pre>
         void LQRControl(int maxMotor0, int maxMotor1){
             static long last_time = 0;
@@ -4652,39 +4667,41 @@ My Arduino code is as follows:
             myICM.getAGMT();
           
             unsigned int proxValue = proximitySensor.getProximity(); 
-          
+            float prox_dist = 69.9294 * pow(proxValue , -0.34455) /100.0 ;
             //Gyroscope
             myGyroZ = myICM.gyrZ();
             float myGyroZ_rad = myGyroZ * 3.1415926 /180;
           
-          //  myGyroZ_LPF = alpha * myGyroZ + ( 1 - alpha) *  old_myGyroZ_LPF ;
-          //  old_myGyroZ_LPF = myGyroZ_LPF;
-           
-            //yaw using gyroscope
+            //yaw angle using gyroscope
             float dt = (millis()-last_time)/1000.;
-            if (dt > 0.01) dt = 0.02;
             last_time = millis();    
             myYaw += + myGyroZ*dt;
             float myYaw_rad = myYaw * 3.1415926 /180;
           
-            int setPoint = 80;
+            float u = 31.622776601683626 * prox_dist + 130.69723874725537 * myYaw_rad + 8.638251909259512 * myGyroZ_rad;
             
-            float u = 9.999999999999982 * proxValue + 58.691046882976124 * myYaw_rad + 4.940271203138708 * myGyroZ_rad;
-          
-            if (proxValue &lt setPoint){
-              SetMotors(getValue(254-u),maxMotor1);
+            if (u <= 0) {
+              SetMotors(maxMotor0+u,maxMotor1);
             } else {
-              SetMotors(maxMotor1,getValue(254-u));
+              SetMotors(maxMotor0,maxMotor1-u);
             }
-            
+           
           }
           
-          int getValue(int input) {
-            int ret = input;
-            if (input &lt 0) ret = 100;
-            return ret;
+          void SetMotors(int power0, int power1){
+            myMotorDriver.setDrive( 0, 1, power0); 
+            myMotorDriver.setDrive( 1, 1, power1);       
+            delay(5);
           }
+          
 </pre>
+<iframe src="https://youtube.com/embed/XJdDW0cyZJY"
+width="560" height="315" frameborder="0" allowfullscreen></iframe> 
+<p>I experimented with multiple proximity and angle offsets and found that it was unable to get better if the angle was offset since it 
+    had no way of knowing it was offset to begin with (which is where the Kalman filter might be able to help). I also saw that although we penalize proximity the highest, 
+    the last two values in the Kr-matrix are not close to zero due to unit conversion since they are out of radians while the other value is using distance measurements.
+    The Kalman filter will be helpful in finding the value of theta and trying to make it zero, and also with estimating the full state. 
+</p>
                                     <ul class="list-inline">
                                         <li>Date: 12/7/20</li>
                                     </ul>
