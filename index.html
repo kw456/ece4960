@@ -4676,19 +4676,9 @@ width="560" height="315" frameborder="0" allowfullscreen></iframe>
 </pre>
 <p>For my Arduino code, I had the setup code (State 0) where I initialized all the sensors as with all the previous labs. I then 
 had my robot run with its max motor levels for 0.3 seconds in order to get it to accelerate to full speed, before then performing LQR control as shown below:</p>
-<p>For selecting my Q and R values, I selected the values in order to put more weight in the value of the proximity sensor as opposed to theta or theta-dot since I wanted to prioritize 
-    the distance from the robot to the wall. I knew that Q defined the weight on the state and R defined the robot's control energy.
-     I also knew that choosing a large value for R meant that you were trying to stabilize the system with less weighted energy while choosing a small value of R would mean 
-you didn't want to penalize the control signal. A large value of Q would mean that the system would try to stabilize with the least possible changes in states.    </p>
-<p>I played around with the Q matrix and the values didn't seem to make too significant of a difference, so I kept the values as shown above. I did see though that when I tried a larger value of R such as 
-    1 or 10 since my robot had limits in terms of the motor level values it was capable of achieving (since the max was 254), which is why I went with a smaller value (0.1).
-</p>
 <pre>
         void LQRControl(int maxMotor0, int maxMotor1){
             static long last_time = 0;
-            float alpha = 0.2;
-            static float myGyroZ_LPF = 0;
-            static float old_myGyroZ_LPF = 0;
           
             myICM.getAGMT();
           
@@ -4700,34 +4690,58 @@ you didn't want to penalize the control signal. A large value of Q would mean th
           
             //yaw angle using gyroscope
             float dt = (millis()-last_time)/1000.;
+            if (dt > 0.1 ) dt = 0.01;
             last_time = millis();    
             myYaw += + myGyroZ*dt;
             float myYaw_rad = myYaw * 3.1415926 /180;
           
-            float u = 31.622776601683626 * prox_dist + 130.69723874725537 * myYaw_rad + 8.638251909259512 * myGyroZ_rad;
-            
-            if (u <= 0) {
+            float u = 31.62277660168363 * prox_dist + 122.38333032510602 * myYaw_rad + 11.198803053918546 * myGyroZ_rad;
+            u = -u;
+           
+            if (u &lt= 0) {
               SetMotors(maxMotor0+u,maxMotor1);
             } else {
               SetMotors(maxMotor0,maxMotor1-u);
             }
-           
-          }
+        }
+          
           
           void SetMotors(int power0, int power1){
             myMotorDriver.setDrive( 0, 1, power0); 
             myMotorDriver.setDrive( 1, 1, power1);       
             delay(5);
-          }
-          
+          }      
 </pre>
-<iframe src="https://youtube.com/embed/XJdDW0cyZJY"
+<p>For selecting my Q and R values, I selected the values in order to put more weight in the value of the proximity sensor as opposed to theta or theta-dot since I wanted to prioritize 
+    the distance from the robot to the wall. I knew that Q defined the weight on the state and R defined the robot's control energy.
+     I also knew that choosing a large value for R meant that you were trying to stabilize the system with less weighted energy while choosing a small value of R would mean 
+you didn't want to penalize the control signal. A large value of Q would mean that the system would try to stabilize with the least possible changes in states.    </p>
+<p>I played around with the Q matrix and the values didn't seem to make too significant of a difference, so I kept the values as shown above. I did see though that when I tried a larger value of R such as 
+    1 or 10 since my robot had limits in terms of the motor level values it was capable of achieving (since the max was 254), which is why I went with a smaller value (0.1).
+</p>
+<p>Most of my process for tuning the LQR controller did rely on trial and error even though I knew the general effects of moving Q and R like I said. 
+    I played around with the values and settled on these as not producing an aggressive looking motor control pattern (aka a zig-zag looking path for the robot). This was also necessary since 
+    my motors had clear limits and could not be driven above motor level 254. In terms of finding my matrix values, I also had an initial mistake with my A and B matrix values since I forgot to convert my proximity values to distances from the wall, 
+leading to my controller not working well at all before I fixed that mistake and I also realized that I needed to securely bind the IMU to the robot as opposed to just taping it, since
+the little movements it was making as the robot was moving was just adding noise to my system. </p>
+
+<iframe src="https://youtube.com/embed/H6R0GaPWuE8"
 width="560" height="315" frameborder="0" allowfullscreen></iframe> 
+<p>Here are two data captures from two of my runs. As seen, the values shown </p>
+<img class="img-fluid d-block mx-auto" src="assets/img/lab11/run1.PNG" alt="" />
+<img class="img-fluid d-block mx-auto" src="assets/img/lab11/run2.PNG" alt="" />
 <p>I experimented with multiple proximity and angle offsets and found that it was unable to get better if the angle was offset since it 
     had no way of knowing it was offset to begin with (which is where the Kalman filter might be able to help). I also saw that although we penalize proximity the highest, 
     the last two values in the Kr-matrix are not close to zero due to unit conversion since they are out of radians while the other value is using distance measurements.
     The Kalman filter will be helpful in finding the value of theta and trying to make it zero, and also with estimating the full state. 
 </p>
+<p>Also as a note, in the videos, there were two wires attached to my robot while it wass running. One of them was to my computer so I could collect 
+    data through the Serial Plotter. The other was to an external Lithium ion E-bike my dad had (with a USB port to output 5V) since it was a lot 
+    easier not having to charge the robot every 20 minutes and also my Ni-Cd battery didn't seem to be doing too hot. I put in 4 AA batteries in the battery
+    compartment of the robot while using this external battery to keep the weight around the same. 
+</p>
+<img class="img-fluid d-block mx-auto" src="assets/img/lab11/bat.PNG" alt="" />
+
                                     <ul class="list-inline">
                                         <li>Date: 12/7/20</li>
                                     </ul>
