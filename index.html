@@ -4558,34 +4558,54 @@ x  axis step: -1  to  (14, 7)
     26     | 22
     27     | 20
 </pre>
-                                    <p>Using this, I was able to fit this to a function that allowed me to translate from proximity values to distances from the wall</p>
+                                    <p>Using this, I was able to fit this to a function that allowed me to translate from proximity values to distances from the wall:</p>
                                     <img class="img-fluid d-block mx-auto" src="assets/img/lab11/fit.PNG" alt="" />
                                     <p>I put this in my Arduino code as:</p>
                                     <pre>
     Dist( in meter)= 69.9294 * pow(proxValue , -0.34455) /100.0 
                                     </pre>
-                                    <p>I then wrote some code to let me debug, record, and easily add functionality to the robot as well, that will be described below</p>
+                                    <p>I then wrote some code to let me debug, record, and easily add functionality to the robot as well, that will be described below.</p>
                                     <p>To first figure out the system in state space, I made some of the assumptions stated in the lab such as assuming that the only input was the torque around the robot axis and that the robot velocity was always set to the upper limit. Our
                                         state space then includes the distance to the wall (d), the orientation of the robot (theta), and the angular velocity of the robot (thetadot). I tested the system with a step response as shown:
-
                                     </p>
                                     <pre>
 Step Response Procedure
-- Run both motors at full speed (at motor level = 254) for 1000 ms
+- Calibrate the motor power level, so the car can move in straight line 
+    Motor0: 251
+    Motor1: 254
+- Ramp up the car at full speed for 400 ms 
+- Run both motors at full speed for 500 ms, start to collect data
 - Have the proximity parameter be at around 15 cm (similar to what we expect in the final controller)
-- Turn the car right (motor0 at full speed, motor1 at 210) for 500 ms
-- Theta dot is the gyroscope reading
-- Theta is the yaw calculated as follows through integration from the gyroscope:
+- Turn the car right (motor0 at full speed, motor1 at 210) for 500 ms, and collect data
+- For the measurement (using a USB cable with SerialPlotter instead of using Bluetooth):
+    Theta_dot is the Gyroscope z axis reading:
+
+        myGyroZ = myICM.gyrZ() * 3.1415926 /180;
+
+    Theta_dot is noisy, so I also calculated the LPF output:
+
+        float alpha = 0.2;
+        static float myGyroZ_LPF = 0;
+        static float old_myGyroZ_LPF = 0;
+        myGyroZ_LPF = alpha * myGyroZ + ( 1 - alpha) *  old_myGyroZ_LPF ;
+        old_myGyroZ_LPF = myGyroZ_LPF;
+
+Theta is the angle calculated as follows:
+ 
         static long last_time = 0;
-        myGyroZ = myICM.gyrZ();
+        myGyroZ = myICM.gyrZ()* 3.1415926 /180;
         float dt = (millis()-last_time)/1000.;
         last_time = millis();    
         myYaw += + myGyroZ*dt;
+
                                     </pre>
 <p>Plotting this data that I received, I got the following graph. I can see from it that the angular states behave like a second order system and that we can't control theta directly, though we can control thetadot directly.  </p>         
 <img class="img-fluid d-block mx-auto" src="assets/img/lab11/step.PNG" alt="" />
+<iframe src="https://youtube.com/embed/1bmqF8VSds4"
+width="560" height="315" frameborder="0" allowfullscreen></iframe> 
+
 <p>The data was collected using a USB cable with the Serial Plotter as opposed to Bluetooth since I just needed the data
-    at the end of the run and it allowed me to finish the lab in time. I also captured the max speed using the ToF sensor since it has proven to provide very accurate data (as shown when doing localization in previous labs). I found the max speed to be around 3.3 m/s 
+    at the end of the run. I also captured the max speed using the ToF sensor since it has proven to provide very accurate data (as shown when doing localization in previous labs). I found the max speed to be around 3.3 m/s 
     using the following code when the robot had finished accelerating:
 </p>  
 <pre><code>
@@ -4596,19 +4616,19 @@ Step Response Procedure
         float tofSpeed =  abs(last_dist - dist)/(1000 * dt);
         last_dist = dist;
 </code></pre>
-                                    <p>Along with that, I figured out the max motor levels that would allow the robot to go in a straight line just for reference. I got Motor0: 249 and Motor1:254, showing a slight
+                                    <p>Along with that, I figured out the max motor levels that would allow the robot to go in a straight line just for reference. I got Motor0: 251 and Motor1:254, showing a slight
                                         asymmetry in the strength of the motors. 
                                     </p>
                                     <p>I was also to obtain find the drag (d) and inertia (I) using the equations from lecture: </p>
                                     <img class="img-fluid d-block mx-auto" src="assets/img/lab11/equations.PNG" alt="" />
 <pre>
     Uss = 250 - 210 = 40
-    Theta_dot_ss = -0.55
-    d = -U_ss/Theta_dot_ss = 40/-0.55 = 72.727
+    Theta_dot_ss = -0.54
+    d = -U_ss/Theta_dot_ss = 40/-0.54 = 75.926
 
     Sampling time = 20 ms for each sample
-    Rise time is around 8 samples = 0.02 * 8 = 0.16 seconds
-    I = -d * risetime / ln(0.1) = 5.054
+    Rise time is around 11.25 samples = 0.225 s
+    I = -d * risetime / ln(0.1) = 7.4192
 </pre>
 <p>I then had the Python code for the LQR calculation:</p>
 <pre>
@@ -4618,9 +4638,14 @@ Step Response Procedure
         eigVals, eigVecs = scipy.linalg.eig(A-B*K)     
         return K, X, eigVals
     
-    v = 3.3
-    d = 77.727
-    I = 5.054
+    # physical constants
+    v = 2.7
+    t = 0.225
+    uss = 251-210
+    theta_dot_ss = -0.54
+    
+    d = - (uss/theta_dot_ss)
+    I = - d * t /math.log(0.1)
     
     A = np.matrix([
         [0.0, v, 0.0],
@@ -4637,14 +4662,15 @@ Step Response Procedure
     Q = np.matrix([
         [100.,   .0,   .0],
         [.0,    10.0,   .0],
-        [.0,     .0,    10.],
+        [.0,     .0,    1.],
     ])
     
     R = np.matrix([0.1])
     
     K, X, eig = lqr(A, B, Q, R)
     
-    K =  [31.622776601683626, 130.69723874725537, 8.638251909259512]
+    K =  [31.622776601683636, 122.38333032510602, 11.198803053918546]
+    
     
     U = -Kx
 </pre>
