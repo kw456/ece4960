@@ -210,7 +210,7 @@
                                 <div class="portfolio-hover">
                                     <div class="portfolio-hover-content"><i class="fas fa-plus fa-3x"></i></div>
                                 </div>
-                                <img class="img-fluid" src="https://www.biblicalministries.org/wp-content/uploads/2019/01/9-3-0-1776930_obstacles_web.jpg" alt="" />
+                                <img class="img-fluid" src="https://etc.usf.edu/clipart/68200/68203/68203_487_w1-1_c_lg.gif" alt="" />
                             </a>
                             <div class="portfolio-caption">
                                 <div class="portfolio-caption-heading">Lab 12a</div>
@@ -4605,7 +4605,7 @@ Theta is the angle calculated as follows:
 width="560" height="315" frameborder="0" allowfullscreen></iframe> 
 
 <p>The data was collected using a USB cable with the Serial Plotter as opposed to Bluetooth since I just needed the data
-    at the end of the run. I also captured the max speed using the ToF sensor since it has proven to provide very accurate data (as shown when doing localization in previous labs). I found the max speed to be around 3.3 m/s 
+    at the end of the run. I also captured the max speed using the ToF sensor since it has proven to provide very accurate data (as shown when doing localization in previous labs). I found the max speed to be around 2.7 m/s 
     using the following code when the robot had finished accelerating:
 </p>  
 <pre><code>
@@ -4727,7 +4727,10 @@ the little movements it was making as the robot was moving was just adding noise
 
 <iframe src="https://youtube.com/embed/H6R0GaPWuE8"
 width="560" height="315" frameborder="0" allowfullscreen></iframe> 
-<p>Here are two data captures from two of my runs. As seen, the values shown </p>
+<p>Here are two data captures from two of my runs. As seen, the values shown indicate the control seems to be working correctly. The motor control values don't seem to 
+    be out of bounds and both motors switch from being at full speed vs full speed - u depending on which direction the robot is correctly itself to go towards. Additionallu, while the robot is adjusting itself, 
+    the video seems to show that this self-correction is so small that it's not really noticeable. 
+</p>
 <img class="img-fluid d-block mx-auto" src="assets/img/lab11/run1.PNG" alt="" />
 <img class="img-fluid d-block mx-auto" src="assets/img/lab11/run2.PNG" alt="" />
 <p>I experimented with multiple proximity and angle offsets and found that it was unable to get better if the angle was offset since it 
