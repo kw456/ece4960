@@ -5020,7 +5020,7 @@ BLA::Matrix<3,3> sigma_u = {0.001,0.0,0.0,0.0,0.001,0.0,0.0,0.0,0.25};
                                         in oscillation and therefore an aggressive looking waveform as follows:
                                     </p>
                                     <img class="img-fluid d-block mx-auto" src="assets/img/lab12/tune1.PNG" alt="" />
-                                    <p>After scaling down u by a factor of 10 and also tuning the proximity process noise from 0.1 to 0.001</p>
+                                    <p>After scaling down u by a factor of 10 and also tuning the proximity process noise from 0.1 to 0.001, I ended up with my final parameters and the following waveforms:</p>
                                       <img class="img-fluid d-block mx-auto" src="assets/img/lab12/tune2.PNG" alt="" />
                                      <iframe src="https://youtube.com/embed/3ZrTvo0JSwI"
                                      width="560" height="315" frameborder="0" allowfullscreen></iframe> 
@@ -5161,7 +5161,7 @@ I found that this metric actuallly seemed to be a pretty reliable way of telling
 <p>Lastly, I had the LQR controller re-engage after the robot finished turning and went at full speed for 0.1 seconds (since the robot went a bit crazy if I re-engaged the LQR controller immediately after the turn), after resetting the theta value since the robot was now 90 degrees from its starting value. 
     I had the same code as when I first followed the wall except I tweaked how much the proximity distance was penalized 
     since the robot did not always start at 0 degrees (due to the difficulty in precisely controlling the robot turning 90 degrees every time). A small offset in the initial theta value for the second wall 
-    could result in the robot not correctly following the wall. I there had Q = np.matrix([
+    could result in the robot not correctly following the wall. I therefore had Q = np.matrix([
     [1000.,   .0,   .0],
     [.0,    5.0,   .0],
     [.0,     .0,    5.],
