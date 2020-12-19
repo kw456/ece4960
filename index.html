@@ -5010,7 +5010,8 @@ void KF(int u, BLA::Matrix<2,1> y){
    
 }
                                     </pre>
-   <p>I had my state machine that consisted of first the ramp up stage, doing LQR control, turning at a 90 degree angle, and then continuing to do wall-following. </p>
+                                    <p>I had the Kalman filter on during the ramp-up phase since it took a little bit of time to regulate the robot. I couldn't visually see too much of a change with the robot but it seemed to perform well, as shown by the video below along with the high-speed turning. </p>
+   <p>In order to have my robot turn the corner, I first fully set up my state machine that consisted of first the ramp up stage, doing LQR control, turning at a 90 degree angle, and then continuing to do wall-following. </p>
                                     <pre>
             switch (step)
             {
@@ -5070,7 +5071,7 @@ void KF(int u, BLA::Matrix<2,1> y){
           //    if ( millis()  &lt t3  + 800){
               if ( millis()  &lt t3  + 300 && !reachTurnAngle){
                 Serial.println("Doing Step 3");
-                TurnMotors(120,120);
+                TurnMotors(150,150);
                 collectData(150,150);
           //      LQRControl(motor0, motor1);
               } else {
@@ -5101,6 +5102,29 @@ void KF(int u, BLA::Matrix<2,1> y){
               break;
             }
     </pre>
+    <p>Through trial and error, I ended up having the robot start turning when it got a distance reading of 180, doing so by turning at a speed of 150 for one motor and then 150 in the opposite direction for the other motor. I tried to get the 
+        robot to turn with both wheels at 254 (in opposite directions) but the amount of drift that occured was too hard to predict or control. I did not use PID control, instead opting for closed Loop
+    control where the robot turned if my yaw angle was 25 in the following code. Obviously, this angle is instead supposed to be 90 degrees, but since the robot is going so fast, 
+I found that this metric seemed to be a fairly reliable way to tell when the robot should stop turning. </p>
+<pre>
+        float dt = (millis()-last_time)/1000.;
+        if (dt > 0.01) dt = 0.02;
+        last_time = millis();    
+        if (turnAngle &lt 0){
+          myYaw += - myGyroZ*dt;
+        } else {
+          myYaw += + myGyroZ*dt;
+        }
+      
+        if (abs(myYaw) > 25) {
+          myYaw = 0;
+          Serial.print("stop angel is reached");
+          reachTurnAngle = true;
+        }
+</pre>
+    <iframe src="https://youtube.com/embed/rsRc7F3IYXE"
+width="560" height="315" frameborder="0" allowfullscreen></iframe> 
+    
                                     <ul class="list-inline">
                                         <li>Date: 12/19/20</li>
                                     </ul>
