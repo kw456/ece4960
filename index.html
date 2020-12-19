@@ -4854,11 +4854,255 @@ width="560" height="315" frameborder="0" allowfullscreen></iframe>
                             <div class="col-lg-8">
                                 <div class="modal-body">
                                     <!-- Project Details Go Here-->
-                                    <h2 class="text-uppercase">Lab 12</h2>
-                                    <p class="item-intro text-muted">Inverted pendulum</p>
-                                    <p>Description of lab</p>
+                                    <h2 class="text-uppercase">Lab 12a</h2>
+                                    <p class="item-intro text-muted">Turning a corner (Part II) - LQG on a Fast Robot</p>
+                                    <p>The purpose of Lab 12a is to make the robot perform high speed wall following along an interior corner and improve on that by using a Kalman Filter to estimate the full state. 
+                                        An improved controller will allow the robot to hit the corner full speed and still manage to turn in time to engage with the second wall and continue wall following. </p>
+                                    <p>To improve the LQR wall following, I developed a Kalman filter that estimates the full state xhat = [proximity, theta, thetadot] given y = [proximity, thetadot] based 
+                                        on measurements from the proximity sensor and gyroscope. This is useful because before the Kalman filter, which is shown in the below graph in blue, the theta tended to drift as time went on.</p>
+                                    <p>First, I used the data from Lab 11a to test how well the filter works before implementation on the actual robot, as shown below:.</p>
+                                    <pre><code>
+                                            A = np.matrix([
+                                            [0.0, v, 0.0],
+                                            [0.0, 0.0, 1.0],
+                                            [0.0, 0.0, -d/I],
+                                        ])
+                                        
+                                        B = np.matrix([
+                                            [0.0],
+                                            [0.0],
+                                            [1/I]
+                                        ])
+                                        
+                                        C = np.matrix([
+                                            [1,0,0],
+                                            [0,0,1]
+                                        ])
+                                        
+                                        # process noise
+                                        Sigma_u = np.matrix([
+                                            [0.0001, 0.0, 0.0],
+                                            [0.0, 0.0001, 0.0],
+                                            [0.0, 0.0, 0.0025]
+                                        ])
+                                        
+                                        #measurement noise
+                                        Sigma_n = np.matrix([
+                                            [0.0009345023539910312, 0.0], 
+                                            [0.0, 0.027848448895443436]
+                                        ])
+                                        
+                                        def kf(mu,sigma,u,y):
+                                            
+                                            mu_p = A.dot(mu) + B.dot(u) 
+                                            sigma_p = A.dot(sigma.dot(A.transpose())) + Sigma_u
+                                            
+                                            y_m = y-C.dot(mu_p)
+                                            sigma_m = C.dot(sigma_p.dot(C.transpose())) + Sigma_n
+                                            kkf_gain = sigma_p.dot(C.transpose().dot(np.linalg.inv(sigma_m)))
+                                        
+                                            mu = mu_p + kkf_gain.dot(y_m)    
+                                            sigma=(np.eye(3)-kkf_gain.dot(C)).dot(sigma_p)
+                                        
+                                            return mu,sigma
+                                        
+                                        size = myData1.shape[0]
+                                        
+                                        mu0 = []
+                                        mu1 = []
+                                        mu2 = []
+                                        u_esti = []
+                                        # 3x1 prior state estimate
+                                        myMu = np.matrix([
+                                            [0.12], 
+                                            [0.0],
+                                            [0.0]
+                                        ])
+                                        
+                                        # 3x3  
+                                        sigma = np.matrix([
+                                            [0.000, 0.0, 0.0],
+                                            [0.0, 0.000, 0.0],
+                                            [0.0, 0.0, 0.000]
+                                        ]) 
+                                        # torque
+                                        u = 0
+                                        
+                                        # 2x1 observation (sensor)
+                                        z = np.matrix([
+                                            [0.12],
+                                            [0.0],
+                                        ]) 
+                                        
+                                        for i in range(size):
+                                            u = myData1[i,2]
+                                            z = np.matrix([
+                                                [myData1[i,3]],
+                                                [myData1[i,4]],
+                                            ]) 
+                                            myMu, sigma = kf(myMu,sigma,u,z)
+                                            mu0.append(myMu.item(0))
+                                            mu1.append(myMu.item(1))
+                                            mu2.append(myMu.item(2))
+                                            u_esti.append(-(31.622776601683636*myMu.item(0) + 122.38333032510602*myMu.item(1) + 11.198803053918546*myMu.item(2)))                                        
+                                    </code></pre>
+                                    <img class="img-fluid d-block mx-auto" src="assets/img/lab12/trial1.PNG" alt="" />
+                                    <p>In terms of values, mu was the estimated state vector and sigma was the covariance matrix with the _p and _u subscripts in the kf() function repressenting the 
+                                        prediction and update steps. y_m is the difference between the measured (y) and predicted state (C * mu_p).
+                                        Sigma_u is the process noise covariance matrix, and Sigma_n is the measurement noise covariance matrix. 
+                                    </p>
+                                    <p>In terms of finding the values for the Kalman filter, I did the following:</p>
+                                    <p>I kept A and B the same as part a, and since I was measuring proximity and thetadot, I got a C of [[1,0,0][0,0,1]].</p>
+                                    <p>I found the measurement noise by performing measurements at 5 different distances from the wall/angular velocities over a period of 5 seconds with my proximity and gyroscope sensors, 
+                                        then finding the standard deviation from the data collected from each of the trials and averaging them. I then got 
+                                            Sigma_n = np.matrix([
+                                            [0.0009345023539910312, 0.0], 
+                                            [0.0, 0.027848448895443436]
+                                        ]) for the average errors from my proximity and thetadot measurements respectively. 
+                                    </p>
+                                    <p>In terms of finding the process noise, I found this by guesstimating and also through trial and error. I first started out 
+                                        with setting all values in the matrix to 1.0.
+                                    </p>
+                                    <pre>
+ Sigma_u = np.matrix([
+ [1.0, 0.0, 0.0],
+ [0.0, 1.0, 0.0],
+ [0.0, 0.0, 1.0]
+ ])
+                                    </pre>
+                                    <p>I then tried setting all the values to 0.0001 to see the effects of this on my graphed values. I noticed that this didn't seem to affect theta-dot (and therefore theta) much, but 
+                                        that there was a noticeable affect on the proximity values, with there being more fluctuations as opposed to higher values in the matrix. It appears that when the measurement noise is a smaller factor, 
+                                        the system will trust the prediction position more because of the Kalman gain changes.  </p>
+                                    <img class="img-fluid d-block mx-auto" src="assets/img/lab12/trial2.PNG" alt="" />
+                                    <p>I settled on the following parameters after running it in Python. These values seemed to lead to reasonable results that seemed to not follow the drift from 0 in the theta graph that resulted if 
+                                        we had not implemented the Kalman filter. Additionally, theta-dot appeared to be around the same as the original values and the proximity values also seemed to be around the same as well. There was a spike in the very beginning of the graph which I cut since it 
+                                    messed with the scale of the graphs, but I think this is because the Kalman Filter takes a little bit of time to regulate in on the actual robot. Therefore, 
+                                I can see that it's helpful to have the filter running during the ramp-up phase.  </p>
+<pre>
+        Sigma_u = np.matrix([
+        [0.1, 0.0, 0.0],
+        [0.0, 0.001, 0.0],
+        [0.0, 0.0, 0.25]
+    ])    
+</pre>
+<img class="img-fluid d-block mx-auto" src="assets/img/lab12/trial3.PNG" alt="" />
+                                    <p>I then adapted this Python code into Arduino code for my real robot, using the BasicLinearAlgebra.h library for matrix operations. </p>
+                                    <pre>
+BLA::Matrix<3,3> A = {0.0,2.7,0.0,0.0,0.0,1.0,0.0,0.0,-10.23371152};
+BLA::Matrix<3,1> B = {0.0,0.0,0.13478547};
+BLA::Matrix<2,3> C = {1.0,0.0,0.0,0.0,0.0,1.0};
+BLA::Matrix<3,3> sigma_u = {0.1,0.0,0.0,0.0,0.001,0.0,0.0,0.0,0.25};
+BLA::Matrix<2,2> sigma_n = {0.0009345023539910312,0.0,0.0,0.027848448895443436};
+BLA::Matrix<3,3> identity = {1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0};
+BLA::Matrix<3,1> mu={0.12,0.0,0.0};
+BLA::Matrix<3,3> sigma ={0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0};
+
+//Kalman Fiter
+void KF(int u, BLA::Matrix<2,1> y){
+    BLA::Matrix<3,1> mu_p = A * mu + B * u;
+    BLA::Matrix<3,3> sigma_p = (A * sigma * (~A)) + sigma_u;
+    BLA::Matrix<2,1> y_m = y - C * mu_p;
+    BLA::Matrix<2,2> sigma_m = C * sigma_p  * ~C + sigma_n;
+    BLA::Matrix<3,2> kkf_gain = sigma_p * ~C * sigma_m.Inverse();
+    
+    mu = mu_p + kkf_gain * y_m;
+    sigma = identity - kkf_gain * C * sigma_p;
+   
+}
+                                    </pre>
+   <p>I had my state machine that consisted of first the ramp up stage, doing LQR control, turning at a 90 degree angle, and then continuing to do wall-following. </p>
+                                    <pre>
+            switch (step)
+            {
+            case 0: 
+              static long t0 = millis();
+              if ( millis()  &lt t0  + 400 ){
+          //      LQRControl(motor0, motor1);
+          //      Serial.println("Doing Step 0");
+                SetMotors(motor0,motor1);
+          
+                // Start KF during the ramp up
+                myICM.getAGMT();
+                unsigned int proxValue = proximitySensor.getProximity(); 
+                float prox_dist = 69.9294 * pow(proxValue , -0.34455) /100.0 ;
+                //Gyroscope
+                myGyroZ = myICM.gyrZ();
+                float myGyroZ_rad = myGyroZ * 3.1415926 /180;
+                BLA::Matrix<2,1> y = {prox_dist,myGyroZ_rad};
+                KF(0, y);
+                
+          //      collectData(motor0,motor1);
+              } else {
+                myYaw = 0;
+                myGyroZ =0;
+                mySpeed = 0;
+                reachTurnAngle = false;
+                reachTurnDist = false;
+                step++;
+              }
+              break;
+            case 1: 
+              static long t1 = millis();
+          //    if ( millis()  &lt t1  + 900){
+              if ( millis()  &lt t1  + 600 && !reachTurnDist){
+                Serial.println("Doing Step 1");
+          //      SetMotors(motor0,motor1);
+          //      collectData(motor0,motor1);
+                LQRControl(motor0, motor1);
+              } else {
+                step++;
+              }
+              break;  
+            case 2: 
+              static long t2 = millis();
+              if ( millis()  &lt t2  + 200){
+                Serial.println("Doing Step 2");
+                SetMotors(120,120);
+          //      collectData(motor0,motor1);
+          //      LQRControl(motor0, motor1);
+              } else {
+                step++;
+              }
+              break;  
+            case 3: 
+              static long t3 = millis();
+          //    step++;
+          //    if ( millis()  &lt t3  + 800){
+              if ( millis()  &lt t3  + 300 && !reachTurnAngle){
+                Serial.println("Doing Step 3");
+                TurnMotors(120,120);
+                collectData(150,150);
+          //      LQRControl(motor0, motor1);
+              } else {
+                myYaw = 0;
+                myGyroZ =0;
+                mySpeed = 0;
+                reachTurnAngle = false;
+                reachTurnDist = false;
+                step++;
+              }
+              break;
+            case 4: 
+              static long t4 = millis();
+          //    step++;
+              if ( millis() &lt t4 + 400 ){
+                Serial.println("Doing Step 4");
+                SetMotors(254,254);
+                collectData(254,254);
+                LQRControl(motor0, motor1);
+              } else {
+                step++;
+              }
+              break;
+            case 5: 
+          //    Serial.println("Doing Step 5");
+              motorStop();
+              step++;
+              break;
+            }
+    </pre>
                                     <ul class="list-inline">
-                                        <li>Date: </li>
+                                        <li>Date: 12/19/20</li>
                                     </ul>
                                     <p></p>
                                     <button class="btn btn-primary" data-dismiss="modal" type="button">
