@@ -4946,7 +4946,7 @@ width="560" height="315" frameborder="0" allowfullscreen></iframe>
                                             mu2.append(myMu.item(2))
                                             u_esti.append(-(31.622776601683636*myMu.item(0) + 122.38333032510602*myMu.item(1) + 11.198803053918546*myMu.item(2)))                                        
                                     </code></pre>
-                                    <img class="img-fluid d-block mx-auto" src="assets/img/lab12/trial1.PNG" alt="" />
+
                                     <p>In terms of values, mu was the estimated state vector and sigma was the covariance matrix with the _p and _u subscripts in the kf() function repressenting the 
                                         prediction and update steps. y_m is the difference between the measured (y) and predicted state (C * mu_p).
                                         Sigma_u is the process noise covariance matrix, and Sigma_n is the measurement noise covariance matrix. 
@@ -4963,6 +4963,7 @@ width="560" height="315" frameborder="0" allowfullscreen></iframe>
                                     <p>In terms of finding the process noise, I found this by guesstimating and also through trial and error. I first started out 
                                         with setting all values in the matrix to 1.0.
                                     </p>
+                                    <img class="img-fluid d-block mx-auto" src="assets/img/lab12/trial1.PNG" alt="" />
                                     <pre>
  Sigma_u = np.matrix([
  [1.0, 0.0, 0.0],
@@ -5073,7 +5074,7 @@ void KF(int u, BLA::Matrix<2,1> y){
                 Serial.println("Doing Step 3");
                 TurnMotors(150,150);
                 collectData(150,150);
-          //      LQRControl(motor0, motor1);
+          //      LQRControl2(motor0, motor1);
               } else {
                 myYaw = 0;
                 myGyroZ =0;
@@ -5103,9 +5104,10 @@ void KF(int u, BLA::Matrix<2,1> y){
             }
     </pre>
     <p>Through trial and error, I ended up having the robot start turning when it got a distance reading of 180, doing so by turning at a speed of 150 for one motor and then 150 in the opposite direction for the other motor. I tried to get the 
-        robot to turn with both wheels at 254 (in opposite directions) but the amount of drift that occured was too hard to predict or control. I did not use PID control, instead opting for closed Loop
-    control where the robot turned if my yaw angle was 25 in the following code. Obviously, this angle is instead supposed to be 90 degrees, but since the robot is going so fast, 
-I found that this metric seemed to be a fairly reliable way to tell when the robot should stop turning. </p>
+        robot to turn with both wheels at 254 (in opposite directions) but the amount of drift that occured was too hard to predict or control. Also, since I wanted to do LQR control after the turn, this did not end up 
+        going well. I did not use PID control too, instead opting for closed loop
+    control where the robot turned if my yaw angle was 25 in the following code. Obviously, this angle is instead supposed to be 90 degrees, but since the robot is going so fast and drifting, 
+I found that this metric actuallly seemed to be a pretty reliable way of telling when the robot should stop turning. </p>
 <pre>
         float dt = (millis()-last_time)/1000.;
         if (dt > 0.01) dt = 0.02;
@@ -5122,8 +5124,23 @@ I found that this metric seemed to be a fairly reliable way to tell when the rob
           reachTurnAngle = true;
         }
 </pre>
-    <iframe src="https://youtube.com/embed/rsRc7F3IYXE"
-width="560" height="315" frameborder="0" allowfullscreen></iframe> 
+<p>Lastly, I had the LQR controller re-engage after the robot finished turning and went at full speed for 0.1 seconds (since the robot went a bit crazy if I re-engaged the LQR controller immediately after the turn), after resetting the theta value since the robot was now 90 degrees from its starting value. 
+    I had the same code as when I first followed the wall except I tweaked how much the proximity distance was penalized 
+    since the robot did not always start at 0 degrees (due to the difficulty in precisely controlling the robot turning 90 degrees every time). A small offset in the initial theta value for the second wall 
+    could result in the robot not correctly following the wall. I there had Q = np.matrix([
+    [1000.,   .0,   .0],
+    [.0,    5.0,   .0],
+    [.0,     .0,    5.],
+]), which I found helped the robot more successfully folow the wall. Additionally, I set the proximity distance setpoint to be the first value after the robot had finished running for 0.1 seconds after the turn, since I knew this distance was different than the first setpoint. 
+     </p>
+     <iframe src="https://youtube.com/embed/rsRc7F3IYXE"
+     width="560" height="315" frameborder="0" allowfullscreen></iframe> 
+     <p>The robot seems to perform pretty well by following the wall, turning the corner, and following the wall again. It doesn't follow the wall for too long after turning since I didn't have too much space and kind of ran out of wall to follow (the wall ended basically where the robot stopped). </p>
+     <p>In terms of future improvements, I think there's always room to tune the Kalman filter (if I had more time). Also, the turning was pretty reliable but I coould probably work on making it more precise as well. Overall, I think that while control theory still seems a 
+         bit like black magic to me, the lab was interesting and taught me about controlling dynamic behaviors with the LQR controller.
+
+     </p>
+
     
                                     <ul class="list-inline">
                                         <li>Date: 12/19/20</li>
