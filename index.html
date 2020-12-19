@@ -5120,9 +5120,30 @@ I found that this metric actuallly seemed to be a pretty reliable way of telling
       
         if (abs(myYaw) > 25) {
           myYaw = 0;
-          Serial.print("stop angel is reached");
+          Serial.print("stop angle is reached");
           reachTurnAngle = true;
         }
+
+        Serial.print(dt);
+        Serial.print(", ");
+      //  Serial.print(myYaw * 3.1415926 /180);
+        Serial.print(myYaw);
+        Serial.print(", ");
+          
+        float dist = getDistance();  
+      
+        if (dist < 180 ) {
+          Serial.print("Turn dist is reached");
+          reachTurnDist = true;
+        }
+        Serial.print(dist);
+        Serial.print(", ");
+        float tofSpeed =  abs(last_dist - dist)/(1000 * dt);
+        if (tofSpeed>3.5) {
+          tofSpeed = 0;
+        }
+        last_dist = dist;
+      
 </pre>
 <p>Lastly, I had the LQR controller re-engage after the robot finished turning and went at full speed for 0.1 seconds (since the robot went a bit crazy if I re-engaged the LQR controller immediately after the turn), after resetting the theta value since the robot was now 90 degrees from its starting value. 
     I had the same code as when I first followed the wall except I tweaked how much the proximity distance was penalized 
