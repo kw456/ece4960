@@ -4973,12 +4973,12 @@ width="560" height="315" frameborder="0" allowfullscreen></iframe>
                                     </pre>
                                     <p>I then tried setting all the values to 0.0001 to see the effects of this on my graphed values. I noticed that this didn't seem to affect theta-dot (and therefore theta) much, but 
                                         that there was a noticeable affect on the proximity values, with there being more fluctuations as opposed to higher values in the matrix. It appears that when the measurement noise is a smaller factor, 
-                                        the system will trust the prediction position more because of the Kalman gain changes.  </p>
+                                        the system will trust the prediction position more because of the change in the Kalman Filter gain.  </p>
                                     <img class="img-fluid d-block mx-auto" src="assets/img/lab12/trial2.PNG" alt="" />
                                     <p>I settled on the following parameters after running it in Python. These values seemed to lead to reasonable results that seemed to not follow the drift from 0 in the theta graph that resulted if 
                                         we had not implemented the Kalman filter. Additionally, theta-dot appeared to be around the same as the original values and the proximity values also seemed to be around the same as well. There was a spike in the very beginning of the graph which I cut since it 
-                                    messed with the scale of the graphs, but I think this is because the Kalman Filter takes a little bit of time to regulate in on the actual robot. Therefore, 
-                                I can see that it's helpful to have the filter running during the ramp-up phase.  </p>
+                                    messed with the scale of the graphs, but I think this is because the Kalman Filter takes a little bit of time to regulate in on the actual robot. Therefore, I think these values looked reasonable but 
+                                I can see that it's definitely helpful to have the filter running during the ramp-up phase.  </p>
 <pre>
         Sigma_u = np.matrix([
         [0.1, 0.0, 0.0],
@@ -5174,7 +5174,7 @@ I found that this metric actuallly seemed to be a pretty reliable way of telling
      <p>In terms of future improvements, I think there's always room to tune the Kalman filter (if I had more time). Also, the turning was pretty reliable but I coould probably work on making it more precise as well. Overall, I think that while control theory still seems a 
          bit like black magic to me, the lab was interesting and taught me about controlling dynamic behaviors of the robot with the LQR controller. 
      </p>
-     <p>I guess this is the end :))</p>
+     <p>Well, I guess this is the end :))</p>
      <img class="img-fluid d-block mx-auto" src="assets/img/lab12/robot-waving.gif" width="100" alt="" />
      <p>FIN.</p>
 
