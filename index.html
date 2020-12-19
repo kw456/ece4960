@@ -5020,7 +5020,8 @@ BLA::Matrix<3,3> sigma_u = {0.001,0.0,0.0,0.0,0.001,0.0,0.0,0.0,0.25};
                                         in oscillation and therefore an aggressive looking waveform as follows:
                                     </p>
                                     <img class="img-fluid d-block mx-auto" src="assets/img/lab12/tune1.PNG" alt="" />
-                                    <p>After scaling down u by a factor of 10 and also tuning the proximity process noise from 0.1 to 0.001, I ended up with my final parameters and the following waveforms:</p>
+                                    <p>After scaling down u by a factor of 10 and also tuning the proximity process noise from 0.1 to 0.001, I ended up with my final parameters and the following waveforms. There waveforms were 
+                                        signficantly more reasonable:</p>
                                       <img class="img-fluid d-block mx-auto" src="assets/img/lab12/tune2.PNG" alt="" />
                                      <iframe src="https://youtube.com/embed/3ZrTvo0JSwI"
                                      width="560" height="315" frameborder="0" allowfullscreen></iframe> 
@@ -5165,7 +5166,7 @@ I found that this metric actuallly seemed to be a pretty reliable way of telling
     [1000.,   .0,   .0],
     [.0,    5.0,   .0],
     [.0,     .0,    5.],
-]), which I found helped the robot more successfully folow the wall. Additionally, I set the proximity distance setpoint to be the first value after the robot had finished running for 0.1 seconds after the turn, since I knew this distance was different than the first setpoint. 
+]), which I found helped the robot more successfully follow the wall. Additionally, I set the proximity distance setpoint to be the first value after the robot had finished running for 0.1 seconds directly following the turn, since I knew this distance was different than the setpoint for the first wall. 
      </p>
      <iframe src="https://youtube.com/embed/rsRc7F3IYXE"
      width="560" height="315" frameborder="0" allowfullscreen></iframe> 
@@ -5174,6 +5175,7 @@ I found that this metric actuallly seemed to be a pretty reliable way of telling
          bit like black magic to me, the lab was interesting and taught me about controlling dynamic behaviors of the robot with the LQR controller. 
      </p>
      <p>I guess this is the end :))</p>
+     <img class="img-fluid d-block mx-auto" src="assets/img/lab12/robot-waving.gif" alt="" />
      <p>FIN.</p>
 
     
