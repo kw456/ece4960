@@ -5007,12 +5007,25 @@ void KF(int u, BLA::Matrix<2,1> y){
     BLA::Matrix<3,2> kkf_gain = sigma_p * ~C * sigma_m.Inverse();
     
     mu = mu_p + kkf_gain * y_m;
-    sigma = identity - kkf_gain * C * sigma_p;
+    sigma = (identity - kkf_gain * C) * sigma_p;
    
 }
                                     </pre>
-                                    <p>I had the Kalman filter on during the ramp-up phase since it took a little bit of time to regulate the robot. I couldn't visually see too much of a change with the robot but it seemed to perform well, as shown by the video below along with the high-speed turning. </p>
-   <p>In order to have my robot turn the corner, I first fully set up my state machine that consisted of first the ramp up stage, doing LQR control, turning at a 90 degree angle, and then continuing to do wall-following. </p>
+                                    <p>I had the Kalman filter on during the ramp-up phase since it took a little bit of time to regulate the robot. I found that when running the robot, I needed to 
+                                        change the process noise matrix (in particular, just the first value from 0.1 to 0.001) so I got the following:                                    </p>
+                                        <pre>
+BLA::Matrix<3,3> sigma_u = {0.001,0.0,0.0,0.0,0.001,0.0,0.0,0.0,0.25};
+                                        </pre>
+                                    <p>This seemed to end up with more consistent results and led to improved wall following. Additionally, I had to scale down the u value by 10. If I didn't put this factor of 10, my control function resulted 
+                                        in oscillation and therefore an aggressive looking waveform as follows:
+                                    </p>
+                                    <img class="img-fluid d-block mx-auto" src="assets/img/lab12/tune1.PNG" alt="" />
+                                    <p>After scaling down u by a factor of 10 and also tuning the proximity process noise from 0.1 to 0.001</p>
+                                      <img class="img-fluid d-block mx-auto" src="assets/img/lab12/tune2.PNG" alt="" />
+                                     <iframe src="https://youtube.com/embed/3ZrTvo0JSwI"
+                                     width="560" height="315" frameborder="0" allowfullscreen></iframe> 
+                                     <p>After this, in order to have my robot turn the corner, I first fully set up my state machine that consisted of first the ramp up stage, doing LQR control, turning at a 90 degree angle, and then continuing to do wall-following. </p>
+ 
                                     <pre>
             switch (step)
             {
